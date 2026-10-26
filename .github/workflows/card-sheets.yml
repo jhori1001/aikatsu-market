@@ -23,7 +23,7 @@ on:
       per_sheet:
         description: "1枚の表に並べる枚数"
         required: false
-        default: "12"
+        default: "6"
       code_suffix:
         description: "official_codeの末尾で絞り込む（例: _N,_R / 空なら全部）"
         required: false
@@ -69,11 +69,11 @@ jobs:
 
           side = os.environ.get("SIDE") or "front"
           sheet_index = int(os.environ.get("SHEET_INDEX") or 1)
-          per = int(os.environ.get("PER_SHEET") or 12)
+          per = int(os.environ.get("PER_SHEET") or 6)
           suffixes = [s.strip() for s in (os.environ.get("CODE_SUFFIX") or "").split(",") if s.strip()]
-          cols = 4
-          cell_w = 260
-          label_h = 20
+          cols = 3
+          cell_w = 200
+          label_h = 18
 
           where_sql = "c.is_active is true"
           params = {"side": side}
@@ -122,7 +122,7 @@ jobs:
                   draw.text((x + 4, y + 4), r.code, fill="black")
                   sheet.paste(im, (x, y + label_h))
               buf = io.BytesIO()
-              sheet.save(buf, "JPEG", quality=72)
+              sheet.save(buf, "JPEG", quality=50)
               data = buf.getvalue()
               print(f"sheet{sheet_index:02d} side={side} size={sheet.size} bytes={len(data)}")
               b64 = base64.b64encode(data).decode("ascii")
