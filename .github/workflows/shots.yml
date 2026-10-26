@@ -62,19 +62,20 @@ jobs:
             const browser = await chromium.launch();
             const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
             const target = '${{ inputs.page }}';
+            const opts = { path: '/tmp/shot.jpg', type: 'jpeg', quality: 60 };
             if (target === 'home') {
               await page.goto('http://localhost:3000/', { waitUntil: 'networkidle' });
-              await page.screenshot({ path: '/tmp/shot.png' });
+              await page.screenshot(opts);
             } else if (target === 'cards') {
               await page.goto('http://localhost:3000/cards', { waitUntil: 'networkidle' });
               // fullPageだと113枚ぶんで数MBになりログに乗り切らないため、画面1枚ぶんだけ
-              await page.screenshot({ path: '/tmp/shot.png' });
+              await page.screenshot(opts);
             } else {
               await page.goto('http://localhost:3000/cards', { waitUntil: 'networkidle' });
               await page.click('.card-tile');
               await page.waitForLoadState('networkidle');
               // fullPageだとなぜかページ全体の高さが異常に大きく計算される(9000px超)ため、画面1枚ぶんだけ
-              await page.screenshot({ path: '/tmp/shot.png' });
+              await page.screenshot(opts);
             }
             await browser.close();
           })();
@@ -82,6 +83,7 @@ jobs:
 
       - name: ログにbase64で出す
         run: |
+          ls -la /tmp/shot.jpg
           echo "===IMG_START==="
-          base64 -w 400 /tmp/shot.png
+          base64 -w 400 /tmp/shot.jpg
           echo "===IMG_END==="
