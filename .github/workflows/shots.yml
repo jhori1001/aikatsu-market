@@ -72,8 +72,9 @@ jobs:
               await page.screenshot(opts);
             } else {
               await page.goto('http://localhost:3000/cards', { waitUntil: 'networkidle' });
-              await page.click('.card-tile');
-              await page.waitForLoadState('networkidle');
+              // clickだと遷移完了を待ちきれず一覧のまま撮ってしまったため、hrefを読んでgotoする
+              const href = await page.locator('.card-tile').first().getAttribute('href');
+              await page.goto('http://localhost:3000' + href, { waitUntil: 'networkidle' });
               // fullPageだとなぜかページ全体の高さが異常に大きく計算される(9000px超)ため、画面1枚ぶんだけ
               await page.screenshot(opts);
             }
