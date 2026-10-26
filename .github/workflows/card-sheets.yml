@@ -1,0 +1,133 @@
+name: カード画像の一覧表を作る
+
+# 名前がまだ入っていないカードの画像を、一覧表（JPEG）にしてログへbase64で出す。
+# カード名・アイドル名を手元で読み取ってCSVに起こすために使う。
+# 画像は自前のDB（card_images）から読む。公式へは一切アクセスしない。
+# ログの末尾切り捨てを避けるため、1回の実行で1枚の表だけ作る。
+
+on:
+  workflow_dispatch:
+    inputs:
+      side:
+        description: "表面(front)か裏面(back)か"
+        required: true
+        default: "front"
+        type: choice
+        options:
+          - front
+          - back
+      sheet_index:
+        description: "何枚目の表か（1始まり）"
+        required: true
+        default: "1"
+      per_sheet:
+        description: "1枚の表に並べる枚数"
+        required: false
+        default: "12"
+      code_suffix:
+        description: "official_codeの末尾で絞り込む（例: _N,_R / 空なら全部）"
+        required: false
+        default: ""
+
+jobs:
+  sheet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TZ: Asia/Tokyo
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: 一覧表を作ってログにbase64で出す
+        env:
+          SIDE: ${{ inputs.side }}
+          SHEET_INDEX: ${{ inputs.sheet_index }}
+          PER_SHEET: ${{ inputs.per_sheet }}
+          CODE_SUFFIX: ${{ inputs.code_suffix }}
+        run: |
+          python - <<'PY'
+          import base64, io, math, os
+          from PIL import Image, ImageDraw
+          from sqlalchemy import create_engine, text
+          from app.config import settings
+
+          side = os.environ.get("SIDE") or "front"
+          sheet_index = int(os.environ.get("SHEET_INDEX") or 1)
+          per = int(os.environ.get("PER_SHEET") or 12)
+          suffixes = [s.strip() for s in (os.environ.get("CODE_SUFFIX") or "").split(",") if s.strip()]
+          cols = 4
+          cell_w = 260
+          label_h = 20
+
+          where_sql = "c.is_active is true"
+          params = {"side": side}
+          if suffixes:
+              clauses = []
+              for i, suf in enumerate(suffixes):
+                  key = f"suf{i}"
+                  clauses.append(f"c.official_code like :{key}")
+                  params[key] = f"%{suf}"
+              where_sql += " and (" + " or ".join(clauses) + ")"
+
+          eng = create_engine(settings.database_url)
+          with eng.connect() as cx:
+              rows = cx.execute(text(f"""
+                  select c.official_code as code, i.data
+                    from cards c
+                    join card_images i
+                      on i.card_pk = c.id and i.side = :side and i.variant = 'thumb'
+                   where {where_sql}
+                   order by c.series_code, (c.card_number)::int nulls last, c.official_code
+              """), params).all()
+
+          total = len(rows)
+          n_sheets = math.ceil(total / per) if per else 0
+          print(f"対象 {total} 枚 / 全 {n_sheets} 枚の表")
+
+          start = (sheet_index - 1) * per
+          chunk = rows[start:start + per]
+          if not chunk:
+              print("この sheet_index には画像がありません（範囲外）")
+          else:
+              imgs = []
+              heights = []
+              for r in chunk:
+                  im = Image.open(io.BytesIO(r.data)).convert("RGB")
+                  h = round(im.height * cell_w / im.width)
+                  imgs.append(im.resize((cell_w, h), Image.LANCZOS))
+                  heights.append(h)
+              cell_h = max(heights) + label_h
+              gridrows = math.ceil(len(chunk) / cols)
+              sheet = Image.new("RGB", (cell_w * cols, cell_h * gridrows), "white")
+              draw = ImageDraw.Draw(sheet)
+              for n, (r, im) in enumerate(zip(chunk, imgs)):
+                  x = (n % cols) * cell_w
+                  y = (n // cols) * cell_h
+                  draw.text((x + 4, y + 4), r.code, fill="black")
+                  sheet.paste(im, (x, y + label_h))
+              buf = io.BytesIO()
+              sheet.save(buf, "JPEG", quality=72)
+              data = buf.getvalue()
+              print(f"sheet{sheet_index:02d} side={side} size={sheet.size} bytes={len(data)}")
+              b64 = base64.b64encode(data).decode("ascii")
+              print("===IMG_START===")
+              for i in range(0, len(b64), 400):
+                  print(b64[i:i + 400])
+              print("===IMG_END===")
+          PY
