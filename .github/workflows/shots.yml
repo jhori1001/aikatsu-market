@@ -67,7 +67,8 @@ jobs:
               await page.screenshot({ path: '/tmp/shot.png' });
             } else if (target === 'cards') {
               await page.goto('http://localhost:3000/cards', { waitUntil: 'networkidle' });
-              await page.screenshot({ path: '/tmp/shot.png', fullPage: true });
+              // fullPageだと113枚ぶんで数MBになりログに乗り切らないため、画面1枚ぶんだけ
+              await page.screenshot({ path: '/tmp/shot.png' });
             } else {
               await page.goto('http://localhost:3000/cards', { waitUntil: 'networkidle' });
               await page.click('.card-tile');
