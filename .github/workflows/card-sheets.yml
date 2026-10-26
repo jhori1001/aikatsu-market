@@ -78,11 +78,13 @@ jobs:
           where_sql = "c.is_active is true"
           params = {"side": side}
           if suffixes:
+              # LIKE の "_" は1文字ワイルドカードなので、"_R" が "_PR" にも誤ヒットする。
+              # right() での完全一致にする。
               clauses = []
               for i, suf in enumerate(suffixes):
                   key = f"suf{i}"
-                  clauses.append(f"c.official_code like :{key}")
-                  params[key] = f"%{suf}"
+                  clauses.append(f"right(c.official_code, char_length(:{key})) = :{key}")
+                  params[key] = suf
               where_sql += " and (" + " or ".join(clauses) + ")"
 
           eng = create_engine(settings.database_url)
