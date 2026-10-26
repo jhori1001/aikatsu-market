@@ -28,6 +28,10 @@ on:
         description: "official_codeの末尾で絞り込む（例: _N,_R / 空なら全部）"
         required: false
         default: ""
+      code_prefix:
+        description: "official_codeの先頭で絞り込む（例: EP- / 空なら全部）"
+        required: false
+        default: ""
 
 jobs:
   sheet:
@@ -60,6 +64,7 @@ jobs:
           SHEET_INDEX: ${{ inputs.sheet_index }}
           PER_SHEET: ${{ inputs.per_sheet }}
           CODE_SUFFIX: ${{ inputs.code_suffix }}
+          CODE_PREFIX: ${{ inputs.code_prefix }}
         run: |
           python - <<'PY'
           import base64, io, math, os
@@ -71,6 +76,7 @@ jobs:
           sheet_index = int(os.environ.get("SHEET_INDEX") or 1)
           per = int(os.environ.get("PER_SHEET") or 9)
           suffixes = [s.strip() for s in (os.environ.get("CODE_SUFFIX") or "").split(",") if s.strip()]
+          prefix = (os.environ.get("CODE_PREFIX") or "").strip()
           cols = 3
           cell_w = 200
           label_h = 18
@@ -86,6 +92,9 @@ jobs:
                   clauses.append(f"right(c.official_code, char_length(:{key})) = :{key}")
                   params[key] = suf
               where_sql += " and (" + " or ".join(clauses) + ")"
+          if prefix:
+              where_sql += " and left(c.official_code, char_length(:prefix)) = :prefix"
+              params["prefix"] = prefix
 
           eng = create_engine(settings.database_url)
           with eng.connect() as cx:
