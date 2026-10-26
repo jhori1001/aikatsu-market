@@ -73,7 +73,8 @@ jobs:
               await page.goto('http://localhost:3000/cards', { waitUntil: 'networkidle' });
               await page.click('.card-tile');
               await page.waitForLoadState('networkidle');
-              await page.screenshot({ path: '/tmp/shot.png', fullPage: true });
+              // fullPageだとなぜかページ全体の高さが異常に大きく計算される(9000px超)ため、画面1枚ぶんだけ
+              await page.screenshot({ path: '/tmp/shot.png' });
             }
             await browser.close();
           })();
