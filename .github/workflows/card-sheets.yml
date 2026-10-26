@@ -23,7 +23,7 @@ on:
       per_sheet:
         description: "1枚の表に並べる枚数"
         required: false
-        default: "6"
+        default: "9"
       code_suffix:
         description: "official_codeの末尾で絞り込む（例: _N,_R / 空なら全部）"
         required: false
@@ -69,7 +69,7 @@ jobs:
 
           side = os.environ.get("SIDE") or "front"
           sheet_index = int(os.environ.get("SHEET_INDEX") or 1)
-          per = int(os.environ.get("PER_SHEET") or 6)
+          per = int(os.environ.get("PER_SHEET") or 9)
           suffixes = [s.strip() for s in (os.environ.get("CODE_SUFFIX") or "").split(",") if s.strip()]
           cols = 3
           cell_w = 200
