@@ -980,12 +980,27 @@ button:active {
 }
 
 .price-hero {
-  font-size: 36px;
+  font-size: 44px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   color: var(--accent-dark);
+}
+
+@media (min-width: 520px) {
+  .price-hero {
+    font-size: 52px;
+  }
+}
+
+/* 画面が狭いときは相場パネルを詰める。カドソバと同じ考え方
+   （画像の隣に置く幅では大きすぎると崩れるため） */
+@media (max-width: 619px) {
+  .detail-price .price-hero {
+    font-size: 28px;
+    line-height: 1.15;
+  }
 }
 
 .stat-mini-row {
@@ -1030,12 +1045,12 @@ button:active {
 
 .chart-box {
   width: 100%;
-  height: 220px;
+  height: 260px;
 }
 
-@media (min-width: 620px) {
+@media (min-width: 560px) {
   .chart-box {
-    height: 260px;
+    height: 340px;
   }
 }
 
@@ -1089,25 +1104,33 @@ button:active {
 
 .big-tile {
   flex: 0 0 auto;
-  width: min(78vw, 280px);
+  width: min(340px, 86vw);
   scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
+  scroll-snap-stop: always;
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 2px;
+}
+
+@media (min-width: 720px) {
+  .big-tile {
+    width: 360px;
+  }
 }
 
 .big-tile-head {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: block;
 }
 
 .big-tile-name {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.3;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .big-tile-chips {
@@ -1115,19 +1138,19 @@ button:active {
 }
 
 .big-tile-body {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: start;
 }
 
-.big-tile-art {
-  width: 104px;
-  flex: 0 0 auto;
+.big-tile-art .card-art {
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
 }
 
 .big-tile-panel {
-  flex: 1;
-  min-width: 0;
-  padding: 10px 12px;
+  padding: 12px 12px 10px;
 }
 
 .price-asof {
@@ -1136,26 +1159,50 @@ button:active {
   color: var(--text-faint);
 }
 
+.big-tile .stat-label {
+  font-size: 11px;
+}
+
+.big-tile .price-hero {
+  font-size: 24px;
+  line-height: 1.2;
+}
+
 .big-tile-diff {
-  margin-top: 4px;
+  margin-top: 2px;
   display: flex;
   align-items: baseline;
   gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .big-tile-diff-label {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-faint);
   font-weight: 700;
 }
 
+.big-tile .stat-mini-row {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.big-tile .stat-mini-item {
+  padding: 2px 0;
+}
+
+.big-tile .stat-mini-value {
+  font-size: 13px;
+}
+
 .big-tile-chart {
   margin-top: 10px;
-  padding: 8px 6px 4px;
+  padding: 10px 10px 4px;
 }
 
 .big-tile-chart .chart-box {
-  height: 110px;
+  height: 190px;
 }
 
 .big-tile-more {
