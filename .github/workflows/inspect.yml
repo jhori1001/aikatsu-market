@@ -1,0 +1,89 @@
+name: DB調査
+
+# 本番DBを読むだけの手動ワークフロー。会社のネットワークからは 5432番ポートが
+# 塞がれていて Neon に直接つなげないため、数字を確かめたいときはここから実行する。
+# 外部サイトへは一切アクセスしない。書き込みもしないので、何度実行しても影響はない。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TZ: Asia/Tokyo
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: 無料枠の使用状況（Neonの容量）
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from sqlalchemy import create_engine, text
+          from app.config import settings
+
+          eng = create_engine(settings.database_url)
+          FREE_LIMIT_GB = 0.5
+
+          with eng.connect() as cx:
+              total_bytes = cx.execute(
+                  text("select pg_database_size(current_database())")
+              ).scalar_one()
+              total_gb = total_bytes / (1024**3)
+              print(f"DB全体: {total_bytes:,} bytes （{total_gb:.3f} GB）")
+              print(f"Neon無料枠（0.5GB）に対して: {total_gb / FREE_LIMIT_GB * 100:.1f}%")
+          PY
+
+      - name: カード画像のサイズ分布（重さの原因調査）
+        run: |
+          python - <<'PY'
+          from sqlalchemy import create_engine, text
+          from app.config import settings
+
+          eng = create_engine(settings.database_url)
+          with eng.connect() as cx:
+              rows = cx.execute(text("""
+                  select side, variant,
+                         count(*) as n,
+                         min(byte_size) as min_b,
+                         round(avg(byte_size)) as avg_b,
+                         max(byte_size) as max_b,
+                         sum(byte_size) as total_b,
+                         max(width) as max_w,
+                         max(height) as max_h
+                    from card_images
+                   group by side, variant
+                   order by side, variant
+              """)).all()
+              print(f"{'side':<6} {'variant':<7} {'枚数':>5} {'最小KB':>8} {'平均KB':>8} {'最大KB':>8} {'合計KB':>9} {'最大px':>12}")
+              for r in rows:
+                  print(
+                      f"{r.side:<6} {r.variant:<7} {r.n:>5} "
+                      f"{r.min_b/1024:>8.1f} {r.avg_b/1024:>8.1f} {r.max_b/1024:>8.1f} "
+                      f"{r.total_b/1024:>9.1f} {r.max_w}x{r.max_h}"
+                  )
+
+              # カード一覧ページで一度に読み込む枚数(= thumb 1枚あたりの合計重さ)
+              total_thumb = cx.execute(text(
+                  "select coalesce(sum(byte_size),0) from card_images where variant='thumb' and side='front'"
+              )).scalar_one()
+              print()
+              print(f"一覧ページで一度に読み込む想定（front thumb 全件合計）: {total_thumb/1024:.1f} KB")
+          PY
