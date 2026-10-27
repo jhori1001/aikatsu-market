@@ -3,6 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { RARITY_SHORT_LABEL } from "@/lib/rarity";
+import { SortSheet, type SortOption } from "@/components/SortSheet";
+
+const SORTS: SortOption[] = [
+  { value: "code", label: "番号順" },
+  { value: "price_desc", label: "参考価格が高い順", note: "サンプル" },
+  { value: "price_asc", label: "参考価格が安い順", note: "サンプル" },
+];
 
 const SERIES_LABEL: Record<string, string> = { E1: "1弾", EP: "プロモ" };
 
@@ -87,6 +94,12 @@ export function CardFilters({
           検索
         </button>
       </form>
+
+      <SortSheet
+        options={SORTS}
+        current={params.get("sort") ?? "code"}
+        onChange={(value) => apply({ sort: value })}
+      />
 
       <div className="chip-scroll">
         <button

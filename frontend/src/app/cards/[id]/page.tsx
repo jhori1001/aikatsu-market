@@ -4,12 +4,13 @@ import { notFound } from "next/navigation";
 import { getCard } from "@/lib/cards";
 import { SITE } from "@/lib/site";
 import { RARITY_SHORT_LABEL, rarityClass } from "@/lib/rarity";
-import { fakePriceSeries, fakeSummary } from "@/lib/fakePrice";
+import { fakePriceSeries, fakeSummary, fakeListings } from "@/lib/fakePrice";
 import { yen, num, mercariSearchUrl, yahooSearchUrl, searchKeyword } from "@/lib/format";
 import { CardArtFlip } from "@/components/CardArtFlip";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { PriceSection } from "@/components/PriceSection";
 import { MiniChange } from "@/components/PriceBadges";
+import { SalesTable } from "@/components/SalesTable";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export default async function CardDetailPage({
 
   const priceSeries = fakePriceSeries(card.official_code, card.code_suffix);
   const summary = fakeSummary(card.official_code, priceSeries);
+  const listings = fakeListings(card.official_code, card.name, priceSeries);
   const keyword = searchKeyword(card);
 
   return (
@@ -119,6 +121,11 @@ export default async function CardDetailPage({
           <PriceSection points={priceSeries} />
         </div>
       </div>
+
+      <h2 className="section-title">
+        出品・取引の内訳 <small>サンプルデータ</small>
+      </h2>
+      <SalesTable items={listings} keyword={keyword} />
     </>
   );
 }

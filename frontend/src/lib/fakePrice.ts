@@ -92,3 +92,36 @@ export function fakeSummary(code: string, points: FakePricePoint[]): FakeSummary
     askingCount: 2 + Math.floor(rng() * 14),
   };
 }
+
+export type FakeListing = {
+  id: string;
+  listing_status: "open" | "sold";
+  condition_grade: "mint" | "damaged";
+  price: number;
+  date: string;
+  title: string;
+};
+
+/** 出品・取引の内訳（サンプル）。カドソバのSalesTableと同じ形の表を出すための仮データ。 */
+export function fakeListings(code: string, name: string | null, points: FakePricePoint[]): FakeListing[] {
+  const rng = mulberry32(hashSeed(`${code}:listings`));
+  const count = 8 + Math.floor(rng() * 14);
+  const listings: FakeListing[] = [];
+  for (let i = 0; i < count; i++) {
+    const idx = Math.floor(rng() * points.length);
+    const base = points[idx]?.price ?? points.at(-1)?.price ?? 0;
+    const noise = (rng() - 0.5) * base * 0.15;
+    const price = Math.max(100, Math.round((base + noise) / 10) * 10);
+    const status: "open" | "sold" = rng() < 0.55 ? "sold" : "open";
+    const grade: "mint" | "damaged" = rng() < 0.8 ? "mint" : "damaged";
+    listings.push({
+      id: `${code}-${i}`,
+      listing_status: status,
+      condition_grade: grade,
+      price,
+      date: points[idx]?.date ?? points.at(-1)?.date ?? "",
+      title: `${name ?? code}${grade === "damaged" ? "（傷あり）" : ""}`,
+    });
+  }
+  return listings;
+}

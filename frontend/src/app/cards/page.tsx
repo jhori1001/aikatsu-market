@@ -30,11 +30,13 @@ function cardHref(card: Card) {
   return `/cards/${encodeURIComponent(card.official_code)}`;
 }
 
-function CardTile({ card }: { card: Card }) {
-  const price = fakeSummary(
-    card.official_code,
-    fakePriceSeries(card.official_code, card.code_suffix),
-  ).current;
+function priceOf(card: Card): number {
+  return (
+    fakeSummary(card.official_code, fakePriceSeries(card.official_code, card.code_suffix)).current ?? 0
+  );
+}
+
+function CardTile({ card, price }: { card: Card; price: number }) {
   return (
     <Link href={cardHref(card)} className="card-tile">
       <CardArt card={card} />
@@ -47,6 +49,12 @@ function CardTile({ card }: { card: Card }) {
   );
 }
 
+const SORT_LABEL: Record<string, string> = {
+  code: "番号順",
+  price_desc: "参考価格が高い順",
+  price_asc: "参考価格が安い順",
+};
+
 export default async function CardsPage({
   searchParams,
 }: {
@@ -58,19 +66,20 @@ export default async function CardsPage({
   const rarity = first(sp.rarity) || null;
   const idol = first(sp.idol) || null;
   const q = first(sp.q) || null;
+  const sort = SORT_LABEL[first(sp.sort)] ? first(sp.sort) : "code";
 
-  let listRes;
   let seriesOptions: string[] = [];
   let rarityOptions: string[] = [];
   let idolOptions: string[] = [];
+  let matched: { card: Card; price: number }[];
   try {
     const [list, seriesList, rarityList, idolList] = await Promise.all([
-      getCards({ q, series, rarity, idol, page, per_page: PER_PAGE }),
+      getCards({ q, series, rarity, idol, per_page: 200 }),
       getSeriesList(),
       getRarityList(),
       getIdolList(),
     ]);
-    listRes = list;
+    matched = list.items.map((card) => ({ card, price: priceOf(card) }));
     seriesOptions = seriesList;
     rarityOptions = rarityList;
     idolOptions = idolList.map((i) => i.idol_name);
@@ -83,8 +92,12 @@ export default async function CardsPage({
     );
   }
 
-  const { items, total } = listRes;
+  if (sort === "price_desc") matched.sort((a, b) => b.price - a.price);
+  else if (sort === "price_asc") matched.sort((a, b) => a.price - b.price);
+
+  const total = matched.length;
   const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
+  const items = matched.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   function pageHref(target: number) {
     const next = new URLSearchParams();
@@ -92,6 +105,7 @@ export default async function CardsPage({
     if (series) next.set("series", series);
     if (rarity) next.set("rarity", rarity);
     if (idol) next.set("idol", idol);
+    if (sort !== "code") next.set("sort", sort);
     next.set("page", String(target));
     return `/cards?${next.toString()}`;
   }
@@ -117,8 +131,8 @@ export default async function CardsPage({
         </div>
       ) : (
         <div className="card-grid">
-          {items.map((card) => (
-            <CardTile key={card.id} card={card} />
+          {items.map(({ card, price }) => (
+            <CardTile key={card.id} card={card} price={price} />
           ))}
         </div>
       )}
