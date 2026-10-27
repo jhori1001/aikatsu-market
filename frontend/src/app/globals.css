@@ -1,5 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap");
 
+/* 明るいテーマ固定。カドソバと同じ理由（OSがダークでも暗くならないよう、
+   ダーク用の指定は置かない）で、見比べたときに色味がぶれないようにする。 */
+
 :root {
   --bg: #fff6fb;
   --bg-soft: #fffafd;
@@ -22,29 +25,6 @@
   --shadow: 0 2px 10px rgba(255, 95, 162, 0.12), 0 8px 24px rgba(58, 34, 51, 0.07);
   --shadow-sm: 0 1px 4px rgba(58, 34, 51, 0.1);
   --header-h: 56px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1f1420;
-    --bg-soft: #26182a;
-    --surface: #2a1b2e;
-    --surface-2: #35213b;
-    --border: #4a2e4f;
-    --border-strong: #603a66;
-    --text: #f6e9f1;
-    --text-dim: #cba8bf;
-    --text-faint: #9c7a92;
-    --accent: #ff7fb4;
-    --accent-dark: #ff5fa2;
-    --accent-soft: #452536;
-    --lavender: #c4a7ff;
-    --lavender-soft: #3a2d52;
-    --gold: #ffd27a;
-    --gold-soft: #4a3a1f;
-    --shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
-    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.3);
-  }
 }
 
 * {
@@ -1010,7 +990,7 @@ button:active {
 
 .stat-mini-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 14px;
   padding-top: 12px;
@@ -1180,11 +1160,37 @@ button:active {
 
 .big-tile-more {
   display: block;
-  margin-top: 8px;
-  text-align: center;
-  font-size: 12px;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13.5px;
   font-weight: 800;
-  color: var(--accent-dark);
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(255, 95, 162, 0.3);
+}
+
+.big-tile-more::after {
+  content: "";
+  position: absolute;
+  top: -60%;
+  left: -60%;
+  width: 36%;
+  height: 220%;
+  transform: rotate(18deg);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0) 100%);
+  animation: buy-shine 4.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .big-tile-more::after {
+    animation: none;
+  }
 }
 
 .chart-empty {
