@@ -1,7 +1,8 @@
 import { yen } from "@/lib/format";
-import type { FakeChange } from "@/lib/fakePrice";
 
-export function MiniChange({ change }: { change: FakeChange }) {
+export type PriceChange = { amount: number | null; ratio: number | null };
+
+export function MiniChange({ change }: { change: PriceChange }) {
   if (change.amount === null) {
     return <span className="stat-mini-value diff-none">—</span>;
   }

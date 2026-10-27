@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PriceChart } from "./PriceChart";
-import type { FakePricePoint } from "@/lib/fakePrice";
+import { PriceChart, type ChartPoint } from "./PriceChart";
 
 const RANGES: [string, number | null][] = [
   ["7日", 7],
@@ -11,7 +10,14 @@ const RANGES: [string, number | null][] = [
   ["全期間", null],
 ];
 
-export function PriceSection({ points }: { points: FakePricePoint[] }) {
+export function PriceSection({
+  points,
+  sample = true,
+}: {
+  points: ChartPoint[];
+  /** サンプルデータの注記を出すか（実データのときはfalse） */
+  sample?: boolean;
+}) {
   const [range, setRange] = useState<number | null>(30);
 
   const visible = useMemo(() => {
@@ -36,9 +42,15 @@ export function PriceSection({ points }: { points: FakePricePoint[] }) {
         ))}
       </div>
 
-      <p className="sample-note">
-        ※ ここに出している価格・グラフはサンプルデータです。実際の取引価格ではありません。
-      </p>
+      {sample ? (
+        <p className="sample-note">
+          ※ ここに出している価格・グラフはサンプルデータです。実際の取引価格ではありません。
+        </p>
+      ) : (
+        <p className="sample-note">
+          ※ Yahoo!フリマの販売中の出品から算出した参考価格です。実際の取引価格とは異なる場合があります。
+        </p>
+      )}
     </div>
   );
 }

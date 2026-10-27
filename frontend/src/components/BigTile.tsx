@@ -1,20 +1,19 @@
 import Link from "next/link";
 import { num, yen } from "@/lib/format";
-import { fakePriceSeries, fakeSummary } from "@/lib/fakePrice";
 import { RARITY_SHORT_LABEL, rarityClass } from "@/lib/rarity";
 import type { Card } from "@/lib/cards";
+import type { TrackedCardData } from "@/lib/realPrice";
 import { CardArt } from "@/components/CardThumb";
 import { PriceChart } from "@/components/PriceChart";
 import { MiniChange } from "@/components/PriceBadges";
 
 /**
  * カドソバの BigTile と同じ構成（絵・相場・ミニグラフが1枚に収まったタイル）。
- * ホームの総合カードランキングで横に並べる。
+ * ホームの総合カードランキングで横に並べる。ER・PRの実相場（Yahoo!フリマ）のみ。
  */
-export function BigTile({ card }: { card: Card }) {
-  const series = fakePriceSeries(card.official_code, card.code_suffix);
-  const summary = fakeSummary(card.official_code, series);
-  const miniPoints = series.slice(-14);
+export function BigTile({ card, data }: { card: Card; data: TrackedCardData }) {
+  const { summary } = data;
+  const miniPoints = data.series.slice(-14);
 
   return (
     <Link href={`/cards/${encodeURIComponent(card.official_code)}`} className="big-tile">
@@ -35,7 +34,7 @@ export function BigTile({ card }: { card: Card }) {
           </div>
 
           <div className="panel big-tile-panel">
-            <div className="stat-label">参考価格（サンプル）</div>
+            <div className="stat-label">参考価格（Yahoo!フリマ）</div>
             <div className="price-hero">{yen(summary.current)}</div>
             <div className="big-tile-diff">
               <span className="big-tile-diff-label">前日比</span>
@@ -60,7 +59,13 @@ export function BigTile({ card }: { card: Card }) {
       </div>
 
       <div className="big-tile-chart panel">
-        <PriceChart points={miniPoints} dense />
+        {miniPoints.length > 0 ? (
+          <PriceChart points={miniPoints} dense />
+        ) : (
+          <div className="chart-box chart-empty">
+            <span>記録がたまるとグラフが出ます</span>
+          </div>
+        )}
       </div>
 
       <span className="big-tile-more">

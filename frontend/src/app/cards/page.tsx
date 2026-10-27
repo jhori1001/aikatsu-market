@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getCards, getIdolList, getRarityList, getSeriesList, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
-import { fakePriceSeries, fakeSummary } from "@/lib/fakePrice";
+import { getLatestPrices } from "@/lib/realPrice";
 import { yen } from "@/lib/format";
 import { CardArt } from "@/components/CardThumb";
 import { CardFilters } from "@/components/CardFilters";
@@ -30,20 +30,15 @@ function cardHref(card: Card) {
   return `/cards/${encodeURIComponent(card.official_code)}`;
 }
 
-function priceOf(card: Card): number {
-  return (
-    fakeSummary(card.official_code, fakePriceSeries(card.official_code, card.code_suffix)).current ?? 0
-  );
-}
-
-function CardTile({ card, price }: { card: Card; price: number }) {
+function CardTile({ card, price }: { card: Card; price: number | null | undefined }) {
+  const tracked = card.code_suffix === "ER" || card.code_suffix === "PR";
   return (
     <Link href={cardHref(card)} className="card-tile">
       <CardArt card={card} />
       <div className="card-meta">
         <div className="card-name">{card.name ?? "（名称未入力）"}</div>
         <div className="card-sub">{card.idol_name ?? card.official_code}</div>
-        <div className="card-price">{yen(price)}</div>
+        {tracked ? <div className="card-price">{yen(price ?? null)}</div> : null}
       </div>
     </Link>
   );
@@ -71,15 +66,16 @@ export default async function CardsPage({
   let seriesOptions: string[] = [];
   let rarityOptions: string[] = [];
   let idolOptions: string[] = [];
-  let matched: { card: Card; price: number }[];
+  let matched: { card: Card; price: number | null }[];
   try {
-    const [list, seriesList, rarityList, idolList] = await Promise.all([
+    const [list, seriesList, rarityList, idolList, prices] = await Promise.all([
       getCards({ q, series, rarity, idol, per_page: 200 }),
       getSeriesList(),
       getRarityList(),
       getIdolList(),
+      getLatestPrices(),
     ]);
-    matched = list.items.map((card) => ({ card, price: priceOf(card) }));
+    matched = list.items.map((card) => ({ card, price: prices.get(card.id) ?? null }));
     seriesOptions = seriesList;
     rarityOptions = rarityList;
     idolOptions = idolList.map((i) => i.idol_name);
@@ -92,8 +88,16 @@ export default async function CardsPage({
     );
   }
 
-  if (sort === "price_desc") matched.sort((a, b) => b.price - a.price);
-  else if (sort === "price_asc") matched.sort((a, b) => a.price - b.price);
+  // 価格が無いカード（R・N、まだ記録が無いER・PR）は並び順に関わらず最後に置く
+  if (sort === "price_desc") {
+    matched.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
+  } else if (sort === "price_asc") {
+    matched.sort((a, b) => {
+      if (a.price === null) return 1;
+      if (b.price === null) return -1;
+      return a.price - b.price;
+    });
+  }
 
   const total = matched.length;
   const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -116,7 +120,9 @@ export default async function CardsPage({
       <p className="page-sub">
         {total.toLocaleString("ja-JP")}枚 · タップすると大きな画像で見られます
         <br />
-        <span className="sample-note">※ 価格はサンプルデータです。実際の取引価格ではありません。</span>
+        <span className="sample-note">
+          ※ 価格はER・PRカードのみ、Yahoo!フリマの販売中の出品から算出した参考価格です。
+        </span>
       </p>
 
       <Suspense fallback={<div className="toolbar" />}>

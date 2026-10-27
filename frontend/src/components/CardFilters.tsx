@@ -7,8 +7,8 @@ import { SortSheet, type SortOption } from "@/components/SortSheet";
 
 const SORTS: SortOption[] = [
   { value: "code", label: "番号順" },
-  { value: "price_desc", label: "参考価格が高い順", note: "サンプル" },
-  { value: "price_asc", label: "参考価格が安い順", note: "サンプル" },
+  { value: "price_desc", label: "参考価格が高い順", note: "ER・PRのみ" },
+  { value: "price_asc", label: "参考価格が安い順", note: "ER・PRのみ" },
 ];
 
 const SERIES_LABEL: Record<string, string> = { E1: "1弾", EP: "プロモ" };

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCards, getCatalogSummary, getIdolList, getRareCards, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
-import { fakePriceSeries, fakeSummary } from "@/lib/fakePrice";
+import { getTrackedData } from "@/lib/realPrice";
 import { yen } from "@/lib/format";
 import { RARITY_SHORT_LABEL } from "@/lib/rarity";
 import { CardArt } from "@/components/CardThumb";
@@ -13,13 +13,6 @@ export const dynamic = "force-dynamic";
 
 function num(n: number): string {
   return n.toLocaleString("ja-JP");
-}
-
-type Priced = { card: Card; price: number; ratio7: number | null };
-
-function priced(card: Card): Priced {
-  const summary = fakeSummary(card.official_code, fakePriceSeries(card.official_code, card.code_suffix));
-  return { card, price: summary.current ?? 0, ratio7: summary.change7.ratio };
 }
 
 export default async function HomePage() {
@@ -42,19 +35,26 @@ export default async function HomePage() {
     return <ErrorBox error={error instanceof Error ? error.message : String(error)} />;
   }
 
-  const pricedCards = allCards.map(priced);
-  const rareTier = pricedCards.filter((p) => p.card.code_suffix === "PR" || p.card.code_suffix === "ER");
-  const normalTier = pricedCards.filter((p) => p.card.code_suffix === "R" || p.card.code_suffix === "N");
-  const topRare = [...rareTier].sort((a, b) => b.price - a.price).slice(0, 8);
-  const topNormal = [...normalTier].sort((a, b) => b.price - a.price).slice(0, 8);
-  const overall = [...pricedCards].sort((a, b) => b.price - a.price).slice(0, 10);
-  const gainers = [...pricedCards]
-    .filter((p) => p.ratio7 !== null && p.ratio7 > 0)
-    .sort((a, b) => (b.ratio7 ?? 0) - (a.ratio7 ?? 0))
+  // 実相場を追跡しているのはER・PR(26枚)だけ
+  const tracked = allCards.filter((c) => c.code_suffix === "ER" || c.code_suffix === "PR");
+  const trackedData = await getTrackedData(tracked.map((c) => c.id));
+
+  const priced = tracked
+    .map((card) => ({ card, data: trackedData.get(card.id) }))
+    .filter((p): p is { card: Card; data: NonNullable<(typeof p)["data"]> } => Boolean(p.data));
+
+  const topPriced = [...priced]
+    .filter((p) => p.data.summary.current !== null)
+    .sort((a, b) => (b.data.summary.current ?? 0) - (a.data.summary.current ?? 0))
+    .slice(0, 8);
+  const overall = topPriced.slice(0, 10);
+  const gainers = [...priced]
+    .filter((p) => (p.data.summary.change7.ratio ?? 0) > 0)
+    .sort((a, b) => (b.data.summary.change7.ratio ?? 0) - (a.data.summary.change7.ratio ?? 0))
     .slice(0, 10);
-  const losers = [...pricedCards]
-    .filter((p) => p.ratio7 !== null && p.ratio7 < 0)
-    .sort((a, b) => (a.ratio7 ?? 0) - (b.ratio7 ?? 0))
+  const losers = [...priced]
+    .filter((p) => (p.data.summary.change7.ratio ?? 0) < 0)
+    .sort((a, b) => (a.data.summary.change7.ratio ?? 0) - (b.data.summary.change7.ratio ?? 0))
     .slice(0, 10);
 
   return (
@@ -117,52 +117,49 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {topRare.length > 0 ? (
+      {topPriced.length > 0 ? (
         <section className="rank-section">
           <div className="section-head accent-pink">
             <h2 className="section-head-title">
-              総合カードランキング（レア） <small>参考価格の高い順・サンプル</small>
+              価格ランキング <small>Yahoo!フリマ・ER・PRのみ</small>
             </h2>
-            <Link href="/cards?rarity=PR" className="section-more">
+            <Link href="/cards?sort=price_desc" className="section-more">
               すべて見る
             </Link>
           </div>
           <div className="rank-scroll">
-            {topRare.map(({ card }) => (
-              <BigTile key={card.id} card={card} />
+            {topPriced.map(({ card, data }) => (
+              <BigTile key={card.id} card={card} data={data} />
             ))}
           </div>
         </section>
-      ) : null}
-
-      {topNormal.length > 0 ? (
+      ) : (
         <section className="rank-section">
           <div className="section-head accent-pink">
             <h2 className="section-head-title">
-              総合カードランキング（通常） <small>参考価格の高い順・サンプル</small>
+              価格ランキング <small>Yahoo!フリマ・ER・PRのみ</small>
             </h2>
-            <Link href="/cards?rarity=R" className="section-more">
-              すべて見る
-            </Link>
           </div>
-          <div className="rank-scroll">
-            {topNormal.map(({ card }) => (
-              <BigTile key={card.id} card={card} />
-            ))}
-          </div>
+          <div className="empty">まだ価格データがありません。記録が溜まると表示されます。</div>
         </section>
-      ) : null}
+      )}
 
       {gainers.length > 0 ? (
         <section className="rank-section">
           <div className="section-head accent-pink">
             <h2 className="section-head-title">
-              値上がり <small>前7日間・サンプル</small>
+              値上がり <small>前7日間・ER・PRのみ</small>
             </h2>
           </div>
           <div className="rank-scroll">
-            {gainers.map(({ card, price, ratio7 }, i) => (
-              <RankTile key={card.id} card={card} no={i + 1} price={price} ratio={ratio7} />
+            {gainers.map(({ card, data }, i) => (
+              <RankTile
+                key={card.id}
+                card={card}
+                no={i + 1}
+                price={data.summary.current}
+                ratio={data.summary.change7.ratio}
+              />
             ))}
           </div>
         </section>
@@ -172,53 +169,67 @@ export default async function HomePage() {
         <section className="rank-section">
           <div className="section-head accent-pink">
             <h2 className="section-head-title">
-              値下がり <small>前7日間・サンプル</small>
+              値下がり <small>前7日間・ER・PRのみ</small>
             </h2>
           </div>
           <div className="rank-scroll">
-            {losers.map(({ card, price, ratio7 }, i) => (
-              <RankTile key={card.id} card={card} no={i + 1} price={price} ratio={ratio7} />
+            {losers.map(({ card, data }, i) => (
+              <RankTile
+                key={card.id}
+                card={card}
+                no={i + 1}
+                price={data.summary.current}
+                ratio={data.summary.change7.ratio}
+              />
             ))}
           </div>
         </section>
       ) : null}
 
-      <section className="rank-section">
-        <div className="section-head accent-pink">
-          <h2 className="section-head-title">
-            総合ランキング <small>サンプルデータ</small>
-          </h2>
-        </div>
-        <div className="rank-list">
-          {overall.map(({ card, price }, i) => (
-            <Link key={card.id} href={`/cards/${encodeURIComponent(card.official_code)}`} className="rank-row-item">
-              <span className="rank-row-no">{i + 1}</span>
-              <div className="rank-row-art">
-                <CardArt card={card} showChip={false} />
-              </div>
-              <div className="rank-row-body">
-                <div className="rank-row-name">{card.name ?? card.official_code}</div>
-                <div className="rank-row-price">{yen(price)}</div>
-                <dl className="rank-row-kv">
-                  {card.code_suffix ? (
-                    <>
-                      <dt>レアリティ</dt>
-                      <dd>{RARITY_SHORT_LABEL[card.code_suffix] ?? card.code_suffix}</dd>
-                    </>
-                  ) : null}
-                  {card.idol_name ? (
-                    <>
-                      <dt>アイドル</dt>
-                      <dd>{card.idol_name}</dd>
-                    </>
-                  ) : null}
-                </dl>
-              </div>
-            </Link>
-          ))}
-        </div>
-        <p className="sample-note">※ 価格・ランキングはサンプルデータです。実際の取引価格ではありません。</p>
-      </section>
+      {overall.length > 0 ? (
+        <section className="rank-section">
+          <div className="section-head accent-pink">
+            <h2 className="section-head-title">
+              総合ランキング <small>ER・PRのみ</small>
+            </h2>
+          </div>
+          <div className="rank-list">
+            {overall.map(({ card, data }, i) => (
+              <Link
+                key={card.id}
+                href={`/cards/${encodeURIComponent(card.official_code)}`}
+                className="rank-row-item"
+              >
+                <span className="rank-row-no">{i + 1}</span>
+                <div className="rank-row-art">
+                  <CardArt card={card} showChip={false} />
+                </div>
+                <div className="rank-row-body">
+                  <div className="rank-row-name">{card.name ?? card.official_code}</div>
+                  <div className="rank-row-price">{yen(data.summary.current)}</div>
+                  <dl className="rank-row-kv">
+                    {card.code_suffix ? (
+                      <>
+                        <dt>レアリティ</dt>
+                        <dd>{RARITY_SHORT_LABEL[card.code_suffix] ?? card.code_suffix}</dd>
+                      </>
+                    ) : null}
+                    {card.idol_name ? (
+                      <>
+                        <dt>アイドル</dt>
+                        <dd>{card.idol_name}</dd>
+                      </>
+                    ) : null}
+                  </dl>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <p className="sample-note">
+            ※ 価格・ランキングはER・PRカードのみ、Yahoo!フリマの販売中の出品から算出しています。
+          </p>
+        </section>
+      ) : null}
 
       {idols.length > 0 ? (
         <section className="rank-section">

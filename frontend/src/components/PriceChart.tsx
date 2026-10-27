@@ -3,9 +3,10 @@
 import { useId } from "react";
 import { Area, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { dayLabel } from "@/lib/format";
-import type { FakePricePoint } from "@/lib/fakePrice";
 
 const ACCENT = "#ff5fa2";
+
+export type ChartPoint = { date: string; price: number };
 
 function niceStep(rough: number): number {
   const exp = Math.floor(Math.log10(rough || 1));
@@ -39,7 +40,7 @@ function shortYen(v: number): string {
   return v.toLocaleString("ja-JP");
 }
 
-export function PriceChart({ points, dense = false }: { points: FakePricePoint[]; dense?: boolean }) {
+export function PriceChart({ points, dense = false }: { points: ChartPoint[]; dense?: boolean }) {
   const uid = useId().replace(/:/g, "");
   const rows = points.map((p) => ({ label: dayLabel(p.date), price: p.price }));
   const values = points.map((p) => p.price);
