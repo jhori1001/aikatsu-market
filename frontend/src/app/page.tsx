@@ -3,9 +3,11 @@ import { getCards, getCatalogSummary, getIdolList, getRareCards, type Card } fro
 import { SITE } from "@/lib/site";
 import { fakePriceSeries, fakeSummary } from "@/lib/fakePrice";
 import { yen } from "@/lib/format";
+import { RARITY_SHORT_LABEL } from "@/lib/rarity";
 import { CardArt } from "@/components/CardThumb";
 import { ErrorBox } from "@/components/ErrorBox";
-import { RatioTag } from "@/components/PriceBadges";
+import { BigTile } from "@/components/BigTile";
+import { RankTile } from "@/components/RankTile";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +15,10 @@ function num(n: number): string {
   return n.toLocaleString("ja-JP");
 }
 
-function priced(card: Card) {
-  const summary = fakeSummary(fakePriceSeries(card.official_code, card.code_suffix));
+type Priced = { card: Card; price: number; ratio7: number | null };
+
+function priced(card: Card): Priced {
+  const summary = fakeSummary(card.official_code, fakePriceSeries(card.official_code, card.code_suffix));
   return { card, price: summary.current ?? 0, ratio7: summary.change7.ratio };
 }
 
@@ -39,7 +43,11 @@ export default async function HomePage() {
   }
 
   const pricedCards = allCards.map(priced);
-  const overall = [...pricedCards].sort((a, b) => b.price - a.price).slice(0, 8);
+  const rareTier = pricedCards.filter((p) => p.card.code_suffix === "PR" || p.card.code_suffix === "ER");
+  const normalTier = pricedCards.filter((p) => p.card.code_suffix === "R" || p.card.code_suffix === "N");
+  const topRare = [...rareTier].sort((a, b) => b.price - a.price).slice(0, 8);
+  const topNormal = [...normalTier].sort((a, b) => b.price - a.price).slice(0, 8);
+  const overall = [...pricedCards].sort((a, b) => b.price - a.price).slice(0, 10);
   const gainers = [...pricedCards]
     .filter((p) => p.ratio7 !== null && p.ratio7 > 0)
     .sort((a, b) => (b.ratio7 ?? 0) - (a.ratio7 ?? 0))
@@ -109,14 +117,77 @@ export default async function HomePage() {
         </section>
       ) : null}
 
+      {topRare.length > 0 ? (
+        <section className="rank-section">
+          <div className="section-head accent-pink">
+            <h2 className="section-head-title">
+              総合カードランキング（レア） <small>参考価格の高い順・サンプル</small>
+            </h2>
+            <Link href="/cards?rarity=PR" className="section-more">
+              すべて見る
+            </Link>
+          </div>
+          <div className="rank-scroll">
+            {topRare.map(({ card }) => (
+              <BigTile key={card.id} card={card} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {topNormal.length > 0 ? (
+        <section className="rank-section">
+          <div className="section-head accent-pink">
+            <h2 className="section-head-title">
+              総合カードランキング（通常） <small>参考価格の高い順・サンプル</small>
+            </h2>
+            <Link href="/cards?rarity=R" className="section-more">
+              すべて見る
+            </Link>
+          </div>
+          <div className="rank-scroll">
+            {topNormal.map(({ card }) => (
+              <BigTile key={card.id} card={card} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {gainers.length > 0 ? (
+        <section className="rank-section">
+          <div className="section-head accent-pink">
+            <h2 className="section-head-title">
+              値上がり <small>前7日間・サンプル</small>
+            </h2>
+          </div>
+          <div className="rank-scroll">
+            {gainers.map(({ card, price, ratio7 }, i) => (
+              <RankTile key={card.id} card={card} no={i + 1} price={price} ratio={ratio7} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {losers.length > 0 ? (
+        <section className="rank-section">
+          <div className="section-head accent-pink">
+            <h2 className="section-head-title">
+              値下がり <small>前7日間・サンプル</small>
+            </h2>
+          </div>
+          <div className="rank-scroll">
+            {losers.map(({ card, price, ratio7 }, i) => (
+              <RankTile key={card.id} card={card} no={i + 1} price={price} ratio={ratio7} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="rank-section">
         <div className="section-head accent-pink">
           <h2 className="section-head-title">
-            価格ランキング <small>サンプルデータ</small>
+            総合ランキング <small>サンプルデータ</small>
           </h2>
-          <Link href="/cards" className="section-more">
-            すべて見る
-          </Link>
         </div>
         <div className="rank-list">
           {overall.map(({ card, price }, i) => (
@@ -128,60 +199,26 @@ export default async function HomePage() {
               <div className="rank-row-body">
                 <div className="rank-row-name">{card.name ?? card.official_code}</div>
                 <div className="rank-row-price">{yen(price)}</div>
+                <dl className="rank-row-kv">
+                  {card.code_suffix ? (
+                    <>
+                      <dt>レアリティ</dt>
+                      <dd>{RARITY_SHORT_LABEL[card.code_suffix] ?? card.code_suffix}</dd>
+                    </>
+                  ) : null}
+                  {card.idol_name ? (
+                    <>
+                      <dt>アイドル</dt>
+                      <dd>{card.idol_name}</dd>
+                    </>
+                  ) : null}
+                </dl>
               </div>
             </Link>
           ))}
         </div>
         <p className="sample-note">※ 価格・ランキングはサンプルデータです。実際の取引価格ではありません。</p>
       </section>
-
-      {gainers.length > 0 ? (
-        <section className="rank-section">
-          <div className="section-head accent-pink">
-            <h2 className="section-head-title">
-              値上がり <small>サンプルデータ・7日間</small>
-            </h2>
-          </div>
-          <div className="rank-scroll">
-            {gainers.map(({ card, price, ratio7 }) => (
-              <Link
-                key={card.id}
-                href={`/cards/${encodeURIComponent(card.official_code)}`}
-                className="flow-tile"
-              >
-                <CardArt card={card} />
-                <span className="flow-tile-name">{card.name ?? card.official_code}</span>
-                <span className="rank-tile-price">{yen(price)}</span>
-                <RatioTag ratio={ratio7} />
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {losers.length > 0 ? (
-        <section className="rank-section">
-          <div className="section-head accent-pink">
-            <h2 className="section-head-title">
-              値下がり <small>サンプルデータ・7日間</small>
-            </h2>
-          </div>
-          <div className="rank-scroll">
-            {losers.map(({ card, price, ratio7 }) => (
-              <Link
-                key={card.id}
-                href={`/cards/${encodeURIComponent(card.official_code)}`}
-                className="flow-tile"
-              >
-                <CardArt card={card} />
-                <span className="flow-tile-name">{card.name ?? card.official_code}</span>
-                <span className="rank-tile-price">{yen(price)}</span>
-                <RatioTag ratio={ratio7} />
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       {idols.length > 0 ? (
         <section className="rank-section">

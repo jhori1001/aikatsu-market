@@ -5,7 +5,7 @@ import { getCard } from "@/lib/cards";
 import { SITE } from "@/lib/site";
 import { RARITY_SHORT_LABEL, rarityClass } from "@/lib/rarity";
 import { fakePriceSeries, fakeSummary } from "@/lib/fakePrice";
-import { yen } from "@/lib/format";
+import { yen, num, mercariSearchUrl, yahooSearchUrl, searchKeyword } from "@/lib/format";
 import { CardArtFlip } from "@/components/CardArtFlip";
 import { FavoriteButton } from "@/components/FavoriteButton";
 import { PriceSection } from "@/components/PriceSection";
@@ -38,7 +38,8 @@ export default async function CardDetailPage({
   if (!card) notFound();
 
   const priceSeries = fakePriceSeries(card.official_code, card.code_suffix);
-  const summary = fakeSummary(priceSeries);
+  const summary = fakeSummary(card.official_code, priceSeries);
+  const keyword = searchKeyword(card);
 
   return (
     <>
@@ -73,12 +74,35 @@ export default async function CardDetailPage({
           <CardArtFlip card={card} />
         </div>
 
+        <div className="buy-row">
+          <a
+            className="buy-btn mercari"
+            href={mercariSearchUrl(keyword)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            メルカリで探す
+          </a>
+          <a className="buy-btn yahoo" href={yahooSearchUrl(keyword)} target="_blank" rel="noreferrer">
+            フリマで探す
+          </a>
+        </div>
+
         <div className="detail-price">
           <div className="panel price-main">
-            <div className="stat-label">参考価格 (サンプル)</div>
+            <div className="stat-label">参考価格（サンプル）</div>
             <div className="price-hero">{yen(summary.current)}</div>
 
+            <div className="big-tile-diff">
+              <span className="big-tile-diff-label">前日比</span>
+              <MiniChange change={summary.change1} />
+            </div>
+
             <div className="stat-mini-row">
+              <div className="stat-mini-item">
+                <span className="stat-mini-label">出品数</span>
+                <span className="stat-mini-value">{num(summary.askingCount)}件</span>
+              </div>
               <div className="stat-mini-item">
                 <span className="stat-mini-label">7日間</span>
                 <MiniChange change={summary.change7} />

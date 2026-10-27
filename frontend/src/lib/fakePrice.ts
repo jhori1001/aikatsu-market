@@ -66,8 +66,11 @@ export type FakeChange = { amount: number | null; ratio: number | null };
 
 export type FakeSummary = {
   current: number | null;
+  change1: FakeChange;
   change7: FakeChange;
   change30: FakeChange;
+  /** 出品数（仮）。カドソバの「出品数」欄と同じ見た目を保つための仮の数字。 */
+  askingCount: number;
 };
 
 function changeOver(points: FakePricePoint[], days: number): FakeChange {
@@ -79,10 +82,13 @@ function changeOver(points: FakePricePoint[], days: number): FakeChange {
   return { amount, ratio };
 }
 
-export function fakeSummary(points: FakePricePoint[]): FakeSummary {
+export function fakeSummary(code: string, points: FakePricePoint[]): FakeSummary {
+  const rng = mulberry32(hashSeed(`${code}:asking`));
   return {
     current: points.at(-1)?.price ?? null,
+    change1: changeOver(points, 1),
     change7: changeOver(points, 7),
     change30: changeOver(points, 30),
+    askingCount: 2 + Math.floor(rng() * 14),
   };
 }

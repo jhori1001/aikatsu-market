@@ -31,7 +31,10 @@ function cardHref(card: Card) {
 }
 
 function CardTile({ card }: { card: Card }) {
-  const price = fakeSummary(fakePriceSeries(card.official_code, card.code_suffix)).current;
+  const price = fakeSummary(
+    card.official_code,
+    fakePriceSeries(card.official_code, card.code_suffix),
+  ).current;
   return (
     <Link href={cardHref(card)} className="card-tile">
       <CardArt card={card} />

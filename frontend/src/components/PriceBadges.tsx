@@ -17,13 +17,3 @@ export function MiniChange({ change }: { change: FakeChange }) {
   );
 }
 
-export function RatioTag({ ratio }: { ratio: number | null }) {
-  if (ratio === null || ratio === 0) return null;
-  const cls = ratio > 0 ? "diff-up" : "diff-down";
-  return (
-    <span className={`rank-tile-delta ${cls}`}>
-      {ratio > 0 ? "+" : ""}
-      {ratio.toFixed(1)}%
-    </span>
-  );
-}
