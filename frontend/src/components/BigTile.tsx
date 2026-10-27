@@ -60,7 +60,7 @@ export function BigTile({ card }: { card: Card }) {
       </div>
 
       <div className="big-tile-chart panel">
-        <PriceChart points={miniPoints} />
+        <PriceChart points={miniPoints} dense />
       </div>
 
       <span className="big-tile-more">

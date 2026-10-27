@@ -39,7 +39,7 @@ function shortYen(v: number): string {
   return v.toLocaleString("ja-JP");
 }
 
-export function PriceChart({ points }: { points: FakePricePoint[] }) {
+export function PriceChart({ points, dense = false }: { points: FakePricePoint[]; dense?: boolean }) {
   const uid = useId().replace(/:/g, "");
   const rows = points.map((p) => ({ label: dayLabel(p.date), price: p.price }));
   const values = points.map((p) => p.price);
@@ -63,19 +63,19 @@ export function PriceChart({ points }: { points: FakePricePoint[] }) {
           <CartesianGrid stroke="var(--border)" vertical={false} />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11, fill: "var(--text-dim)" }}
+            tick={{ fontSize: dense ? 9 : 11, fill: "var(--text-dim)" }}
             stroke="var(--border)"
             tickLine={false}
-            minTickGap={16}
+            minTickGap={dense ? 30 : 16}
           />
           <YAxis
             domain={scale ? scale.domain : ["auto", "auto"]}
             ticks={scale?.ticks}
-            tick={{ fontSize: 11, fill: "var(--text-dim)" }}
+            tick={{ fontSize: dense ? 9 : 11, fill: "var(--text-dim)" }}
             stroke="var(--border)"
             tickLine={false}
-            width={60}
-            tickFormatter={(v: number) => shortYen(v)}
+            width={dense ? 34 : 76}
+            tickFormatter={(v: number) => (dense ? shortYen(v) : `${v.toLocaleString("ja-JP")}円`)}
           />
           <Tooltip
             contentStyle={{
