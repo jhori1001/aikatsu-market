@@ -781,60 +781,112 @@ button:active {
 
 /* ---------------- 詳細ページ ---------------- */
 
+/* スマホは「名前 → [画像｜価格を横並び] → 購入導線 → グラフ」の4段。
+   画像を小さくして横に価格パネルを置くことで、1画面に名前・画像・価格が
+   まとまって収まるようにする（画像を大きいまま縦に積むと、価格やグラフに
+   たどり着くまでにスクロール量が増えてしまう。カドソバの detail-hero と
+   同じ考え方）。 */
 .detail-hero {
   display: grid;
-  gap: 16px;
+  grid-template-columns: 132px minmax(0, 1fr);
+  grid-template-areas:
+    "head  head"
+    "art   price"
+    "buy   buy"
+    "chart chart";
+  column-gap: 12px;
+  row-gap: 12px;
 }
 
 .detail-head {
+  grid-area: head;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .detail-head-main {
   min-width: 0;
 }
 
+.detail-head .fav-btn {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
 .detail-art-col {
-  max-width: 320px;
+  grid-area: art;
+}
+
+.buy-row {
+  grid-area: buy;
 }
 
 .detail-price {
-  margin-top: 2px;
+  grid-area: price;
+}
+
+.detail-chart {
+  grid-area: chart;
 }
 
 .price-main {
   padding: 16px;
 }
 
-@media (min-width: 620px) {
+@media (min-width: 430px) {
   .detail-hero {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 560px) {
+  .detail-hero {
+    grid-template-columns: 200px minmax(0, 1fr);
+    column-gap: 18px;
+  }
+}
+
+/* 画面が広ければ画像を左に大きく置き、右列に名前・価格・グラフを積む */
+@media (min-width: 820px) {
+  .detail-hero {
+    max-width: 940px;
+    margin-inline: auto;
     grid-template-columns: 280px minmax(0, 1fr);
     grid-template-areas:
       "art head"
       "art buy"
       "art price"
       "art chart";
+    column-gap: 24px;
     align-items: start;
   }
-  .detail-head {
-    grid-area: head;
-  }
   .detail-art-col {
-    grid-area: art;
-    max-width: none;
+    align-self: center;
   }
-  .buy-row {
-    grid-area: buy;
+}
+
+/* スマホでは画像の隣の細い列に収める必要があるので、
+   価格パネルまわりを詰める（カドソバと同じ理由） */
+@media (max-width: 819px) {
+  .detail-hero .price-hero {
+    font-size: 28px;
+    line-height: 1.15;
   }
-  .detail-price {
-    grid-area: price;
+  .detail-hero .panel {
+    padding: 10px 12px 12px;
   }
-  .detail-chart {
-    grid-area: chart;
+  .detail-hero .stat-mini-row {
+    margin-top: 8px;
+    padding-top: 8px;
+    gap: 4px;
+  }
+  .detail-hero .stat-mini-value {
+    font-size: 13px;
+  }
+  .detail-hero .chart-box {
+    height: 210px;
   }
 }
 
@@ -1015,15 +1067,6 @@ button:active {
 @media (min-width: 520px) {
   .price-hero {
     font-size: 52px;
-  }
-}
-
-/* 画面が狭いときは相場パネルを詰める。カドソバと同じ考え方
-   （画像の隣に置く幅では大きすぎると崩れるため） */
-@media (max-width: 619px) {
-  .detail-price .price-hero {
-    font-size: 28px;
-    line-height: 1.15;
   }
 }
 
