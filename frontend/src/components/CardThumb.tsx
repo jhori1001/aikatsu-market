@@ -1,7 +1,10 @@
 import { rarityClass } from "@/lib/rarity";
 import type { Card } from "@/lib/cards";
 
-type ThumbCard = Pick<Card, "official_code" | "name" | "code_suffix" | "has_front" | "has_back">;
+type ThumbCard = Pick<
+  Card,
+  "official_code" | "name" | "code_suffix" | "has_front" | "has_back" | "is_landscape"
+>;
 
 export function thumbUrl(card: ThumbCard): string | null {
   return card.has_front ? `/img/cards/${encodeURIComponent(card.official_code)}/front-thumb.webp` : null;
@@ -18,7 +21,7 @@ export function CardArt({ card, showChip = true }: { card: ThumbCard; showChip?:
   const alt = card.name ?? card.official_code;
   const cls = rarityClass(card.code_suffix);
   return (
-    <div className="card-art">
+    <div className={`card-art ${card.is_landscape ? "landscape" : ""}`}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={alt} loading="lazy" decoding="async" />
@@ -37,7 +40,7 @@ export function CardArtLarge({ card, side }: { card: ThumbCard; side: "front" | 
   const src = largeUrl(card, side);
   const alt = `${card.name ?? card.official_code}の${side === "back" ? "裏面" : "画像"}`;
   return (
-    <div className="detail-art">
+    <div className={`detail-art ${card.is_landscape ? "landscape" : ""}`}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={alt} decoding="async" />

@@ -16,13 +16,21 @@ export type Card = {
   is_parallel: boolean;
   has_front: boolean;
   has_back: boolean;
+  is_landscape: boolean;
 };
 
+// カード画像の向き。バトスラと違い card_type のような種別が無いので、
+// 実際に保存した表面(large)画像の縦横を見て判定する（横 > 縦 なら横向き）。
 const CARD_COLUMNS = `
   c.id, c.official_code, c.series_code, c.card_number, c.code_suffix,
   c.rarity, c.name, c.idol_name, c.is_parallel,
   exists(select 1 from card_images i where i.card_pk = c.id and i.side = 'front') as has_front,
-  exists(select 1 from card_images i where i.card_pk = c.id and i.side = 'back') as has_back
+  exists(select 1 from card_images i where i.card_pk = c.id and i.side = 'back') as has_back,
+  coalesce(
+    (select i.width > i.height from card_images i
+      where i.card_pk = c.id and i.side = 'front' and i.variant = 'large'),
+    false
+  ) as is_landscape
 `;
 
 export type CardListParams = {

@@ -382,6 +382,13 @@ button:active {
   display: block;
 }
 
+/* 横長のカード(real-photo特殊カード等)も、箱の形は縦カードに揃えてグリッドを
+   崩さない。object-fit: contain で全部見せ、左右の余りは箱の下地色で埋める。 */
+.card-art.landscape img {
+  object-fit: contain;
+  background: var(--surface-2);
+}
+
 .card-art-empty {
   display: flex;
   align-items: center;
@@ -838,6 +845,11 @@ button:active {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* 詳細ページは単独表示なので、横長カードは箱自体を横長にできる */
+.detail-art.landscape {
+  aspect-ratio: 870 / 600;
 }
 
 .art-open {
