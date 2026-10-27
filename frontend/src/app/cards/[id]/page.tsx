@@ -4,8 +4,12 @@ import { notFound } from "next/navigation";
 import { getCard } from "@/lib/cards";
 import { SITE } from "@/lib/site";
 import { RARITY_SHORT_LABEL, rarityClass } from "@/lib/rarity";
+import { fakePriceSeries, fakeSummary } from "@/lib/fakePrice";
+import { yen } from "@/lib/format";
 import { CardArtFlip } from "@/components/CardArtFlip";
 import { FavoriteButton } from "@/components/FavoriteButton";
+import { PriceSection } from "@/components/PriceSection";
+import { MiniChange } from "@/components/PriceBadges";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +36,9 @@ export default async function CardDetailPage({
   const { id } = await params;
   const card = await getCard(decodeURIComponent(id));
   if (!card) notFound();
+
+  const priceSeries = fakePriceSeries(card.official_code, card.code_suffix);
+  const summary = fakeSummary(priceSeries);
 
   return (
     <>
@@ -64,6 +71,28 @@ export default async function CardDetailPage({
 
         <div className="detail-art-col">
           <CardArtFlip card={card} />
+        </div>
+
+        <div className="detail-price">
+          <div className="panel price-main">
+            <div className="stat-label">参考価格 (サンプル)</div>
+            <div className="price-hero">{yen(summary.current)}</div>
+
+            <div className="stat-mini-row">
+              <div className="stat-mini-item">
+                <span className="stat-mini-label">7日間</span>
+                <MiniChange change={summary.change7} />
+              </div>
+              <div className="stat-mini-item">
+                <span className="stat-mini-label">30日間</span>
+                <MiniChange change={summary.change30} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="detail-chart">
+          <PriceSection points={priceSeries} />
         </div>
       </div>
     </>

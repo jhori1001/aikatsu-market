@@ -1,8 +1,11 @@
 import Link from "next/link";
-import { getCatalogSummary, getIdolList, getRareCards } from "@/lib/cards";
+import { getCards, getCatalogSummary, getIdolList, getRareCards, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
+import { fakePriceSeries, fakeSummary } from "@/lib/fakePrice";
+import { yen } from "@/lib/format";
 import { CardArt } from "@/components/CardThumb";
 import { ErrorBox } from "@/components/ErrorBox";
+import { RatioTag } from "@/components/PriceBadges";
 
 export const dynamic = "force-dynamic";
 
@@ -10,19 +13,41 @@ function num(n: number): string {
   return n.toLocaleString("ja-JP");
 }
 
+function priced(card: Card) {
+  const summary = fakeSummary(fakePriceSeries(card.official_code, card.code_suffix));
+  return { card, price: summary.current ?? 0, ratio7: summary.change7.ratio };
+}
+
 export default async function HomePage() {
   let summary;
   let rareCards;
   let idols;
+  let allCards: Card[];
   try {
-    [summary, rareCards, idols] = await Promise.all([
+    const [s, rare, idolList, list] = await Promise.all([
       getCatalogSummary(),
       getRareCards(14),
       getIdolList(),
+      getCards({ per_page: 200 }),
     ]);
+    summary = s;
+    rareCards = rare;
+    idols = idolList;
+    allCards = list.items;
   } catch (error) {
     return <ErrorBox error={error instanceof Error ? error.message : String(error)} />;
   }
+
+  const pricedCards = allCards.map(priced);
+  const overall = [...pricedCards].sort((a, b) => b.price - a.price).slice(0, 8);
+  const gainers = [...pricedCards]
+    .filter((p) => p.ratio7 !== null && p.ratio7 > 0)
+    .sort((a, b) => (b.ratio7 ?? 0) - (a.ratio7 ?? 0))
+    .slice(0, 10);
+  const losers = [...pricedCards]
+    .filter((p) => p.ratio7 !== null && p.ratio7 < 0)
+    .sort((a, b) => (a.ratio7 ?? 0) - (b.ratio7 ?? 0))
+    .slice(0, 10);
 
   return (
     <>
@@ -80,6 +105,80 @@ export default async function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="rank-section">
+        <div className="section-head accent-pink">
+          <h2 className="section-head-title">
+            価格ランキング <small>サンプルデータ</small>
+          </h2>
+          <Link href="/cards" className="section-more">
+            すべて見る
+          </Link>
+        </div>
+        <div className="rank-list">
+          {overall.map(({ card, price }, i) => (
+            <Link key={card.id} href={`/cards/${encodeURIComponent(card.official_code)}`} className="rank-row-item">
+              <span className="rank-row-no">{i + 1}</span>
+              <div className="rank-row-art">
+                <CardArt card={card} showChip={false} />
+              </div>
+              <div className="rank-row-body">
+                <div className="rank-row-name">{card.name ?? card.official_code}</div>
+                <div className="rank-row-price">{yen(price)}</div>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <p className="sample-note">※ 価格・ランキングはサンプルデータです。実際の取引価格ではありません。</p>
+      </section>
+
+      {gainers.length > 0 ? (
+        <section className="rank-section">
+          <div className="section-head accent-pink">
+            <h2 className="section-head-title">
+              値上がり <small>サンプルデータ・7日間</small>
+            </h2>
+          </div>
+          <div className="rank-scroll">
+            {gainers.map(({ card, price, ratio7 }) => (
+              <Link
+                key={card.id}
+                href={`/cards/${encodeURIComponent(card.official_code)}`}
+                className="flow-tile"
+              >
+                <CardArt card={card} />
+                <span className="flow-tile-name">{card.name ?? card.official_code}</span>
+                <span className="rank-tile-price">{yen(price)}</span>
+                <RatioTag ratio={ratio7} />
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {losers.length > 0 ? (
+        <section className="rank-section">
+          <div className="section-head accent-pink">
+            <h2 className="section-head-title">
+              値下がり <small>サンプルデータ・7日間</small>
+            </h2>
+          </div>
+          <div className="rank-scroll">
+            {losers.map(({ card, price, ratio7 }) => (
+              <Link
+                key={card.id}
+                href={`/cards/${encodeURIComponent(card.official_code)}`}
+                className="flow-tile"
+              >
+                <CardArt card={card} />
+                <span className="flow-tile-name">{card.name ?? card.official_code}</span>
+                <span className="rank-tile-price">{yen(price)}</span>
+                <RatioTag ratio={ratio7} />
+              </Link>
+            ))}
           </div>
         </section>
       ) : null}

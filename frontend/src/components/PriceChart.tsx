@@ -1,0 +1,107 @@
+"use client";
+
+import { useId } from "react";
+import { Area, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { dayLabel } from "@/lib/format";
+import type { FakePricePoint } from "@/lib/fakePrice";
+
+const ACCENT = "#ff5fa2";
+
+function niceStep(rough: number): number {
+  const exp = Math.floor(Math.log10(rough || 1));
+  const base = Math.pow(10, exp);
+  const n = rough / base;
+  if (n <= 1) return 1 * base;
+  if (n <= 2) return 2 * base;
+  if (n <= 2.5) return 2.5 * base;
+  if (n <= 5) return 5 * base;
+  return 10 * base;
+}
+
+function niceScale(values: number[]): { domain: [number, number]; ticks: number[] } | undefined {
+  if (values.length === 0) return undefined;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = max === min ? Math.max(Math.abs(min) * 0.2, 100) : max - min;
+  const step = niceStep(spread / 4);
+  const lo = Math.max(0, Math.floor((min - spread * 0.1) / step) * step);
+  const hi = Math.ceil((max + spread * 0.1) / step) * step;
+  const ticks: number[] = [];
+  for (let v = lo; v <= hi + step / 2; v += step) ticks.push(Math.round(v));
+  return { domain: [lo, hi], ticks };
+}
+
+function shortYen(v: number): string {
+  if (v >= 10000) {
+    const man = v / 10000;
+    return `${man >= 10 ? Math.round(man) : man.toFixed(1)}万`;
+  }
+  return v.toLocaleString("ja-JP");
+}
+
+export function PriceChart({ points }: { points: FakePricePoint[] }) {
+  const uid = useId().replace(/:/g, "");
+  const rows = points.map((p) => ({ label: dayLabel(p.date), price: p.price }));
+  const values = points.map((p) => p.price);
+  const scale = niceScale(values);
+  const manyPoints = rows.length > 40;
+
+  if (rows.length === 0) {
+    return <div className="empty">この期間のデータがありません。</div>;
+  }
+
+  return (
+    <div className="chart-box">
+      <ResponsiveContainer>
+        <ComposedChart data={rows} margin={{ top: 10, right: 16, bottom: 4, left: 4 }}>
+          <defs>
+            <linearGradient id={`fill-${uid}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={ACCENT} stopOpacity={0.22} />
+              <stop offset="100%" stopColor={ACCENT} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke="var(--border)" vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11, fill: "var(--text-dim)" }}
+            stroke="var(--border)"
+            tickLine={false}
+            minTickGap={16}
+          />
+          <YAxis
+            domain={scale ? scale.domain : ["auto", "auto"]}
+            ticks={scale?.ticks}
+            tick={{ fontSize: 11, fill: "var(--text-dim)" }}
+            stroke="var(--border)"
+            tickLine={false}
+            width={60}
+            tickFormatter={(v: number) => shortYen(v)}
+          />
+          <Tooltip
+            contentStyle={{
+              background: "var(--surface)",
+              border: "1px solid var(--border-strong)",
+              borderRadius: 6,
+              fontSize: 12,
+              color: "var(--text)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+            labelStyle={{ color: "var(--text-dim)", marginBottom: 2 }}
+            formatter={(value: number) => [`${value.toLocaleString("ja-JP")}円`, "参考価格"]}
+          />
+          <Area
+            name="参考価格"
+            type="monotone"
+            dataKey="price"
+            stroke={ACCENT}
+            strokeWidth={2.5}
+            fill={`url(#fill-${uid})`}
+            dot={manyPoints ? false : { r: 3, fill: "var(--surface)", stroke: ACCENT, strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: ACCENT, strokeWidth: 0 }}
+            isAnimationActive={false}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}

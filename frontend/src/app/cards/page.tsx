@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getCards, getIdolList, getRarityList, getSeriesList, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
+import { fakePriceSeries, fakeSummary } from "@/lib/fakePrice";
+import { yen } from "@/lib/format";
 import { CardArt } from "@/components/CardThumb";
 import { CardFilters } from "@/components/CardFilters";
 import { ErrorBox } from "@/components/ErrorBox";
@@ -29,12 +31,14 @@ function cardHref(card: Card) {
 }
 
 function CardTile({ card }: { card: Card }) {
+  const price = fakeSummary(fakePriceSeries(card.official_code, card.code_suffix)).current;
   return (
     <Link href={cardHref(card)} className="card-tile">
       <CardArt card={card} />
       <div className="card-meta">
         <div className="card-name">{card.name ?? "（名称未入力）"}</div>
         <div className="card-sub">{card.idol_name ?? card.official_code}</div>
+        <div className="card-price">{yen(price)}</div>
       </div>
     </Link>
   );
@@ -92,7 +96,11 @@ export default async function CardsPage({
   return (
     <>
       <h1 className="page-title">カード図鑑</h1>
-      <p className="page-sub">{total.toLocaleString("ja-JP")}枚 · タップすると大きな画像で見られます</p>
+      <p className="page-sub">
+        {total.toLocaleString("ja-JP")}枚 · タップすると大きな画像で見られます
+        <br />
+        <span className="sample-note">※ 価格はサンプルデータです。実際の取引価格ではありません。</span>
+      </p>
 
       <Suspense fallback={<div className="toolbar" />}>
         <CardFilters seriesOptions={seriesOptions} rarityOptions={rarityOptions} idolOptions={idolOptions} />
