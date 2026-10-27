@@ -725,11 +725,12 @@ button:active {
 
 .flow-tile {
   flex: 0 0 auto;
-  width: 120px;
+  width: 76px;
+  display: block;
 }
 
 .flow-tile .card-art {
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .flow-tile-name {
