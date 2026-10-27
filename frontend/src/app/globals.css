@@ -1070,27 +1070,68 @@ button:active {
   }
 }
 
+/* 横に3つ並べると、画像の隣に置くスマホでは1枠が50px程度しかなく、
+   見出しも金額も折り返して2段になり、高さも揃わなかった。
+   狭いうちは1項目1行の縦並びにして、左に見出し・右に数字を置く
+   （カドソバの.stat-mini-rowと同じ考え方）。 */
 .stat-mini-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 14px;
-  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--border);
 }
 
+.stat-mini-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+
+.stat-mini-item + .stat-mini-item {
+  border-top: 1px dashed var(--border);
+}
+
 .stat-mini-label {
-  display: block;
+  display: inline;
   font-size: 11px;
   color: var(--text-faint);
   font-weight: 700;
-  margin-bottom: 3px;
 }
 
 .stat-mini-value {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+}
+
+/* 幅に余裕がある画面では、横に3つ並べる */
+@media (min-width: 620px) {
+  .stat-mini-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+  .stat-mini-item {
+    display: block;
+    padding: 0;
+    border-top: none;
+  }
+  .stat-mini-item + .stat-mini-item {
+    border-top: none;
+  }
+  .stat-mini-label {
+    display: block;
+    margin-bottom: 3px;
+  }
+  .stat-mini-value {
+    font-size: 15px;
+  }
 }
 
 .diff-up {
