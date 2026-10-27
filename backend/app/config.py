@@ -30,6 +30,7 @@ class Settings(BaseSettings):
 
     # --- クロール挙動 ---
     aikatsu_interval_sec: float = 3.0
+    yahoo_flea_interval_sec: float = 3.0
     crawl_max_retries: int = 3
     crawl_timeout_sec: int = 20
     crawl_connect_timeout_sec: int = 5

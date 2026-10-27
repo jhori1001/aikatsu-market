@@ -9,6 +9,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -172,3 +173,72 @@ class CrawlLog(Base):
     duration_ms: Mapped[int | None] = mapped_column(Integer)
 
     batch: Mapped["Batch"] = relationship(back_populates="logs")
+
+
+# ---------------------------------------------------------------- 相場（ER・PRのみ）
+
+
+class ListingStatus:
+    OPEN = "open"
+    SOLD = "sold"
+    WITHDRAWN = "withdrawn"
+    UNKNOWN = "unknown"
+
+
+class SaleSource:
+    YAHOO_FLEA = "yahoo_flea"
+
+
+class SaleListing(Base):
+    """Yahoo!フリマの出品1件。
+
+    アイカツ！アンコールは発売間もなく(2026-10-08〜)、カード数も少ない
+    （ER・PRのみ26枚）ため、カドソバのような成約価格の追跡（消えた出品を
+    個別ページで確認して売れたか判定する）は行わず、販売中の出品を
+    記録するだけにする（要望「少なく入れれば理想」）。
+    """
+
+    __tablename__ = "sale_listings"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    card_pk: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False
+    )
+    source: Mapped[str] = mapped_column(String(32), nullable=False, default=SaleSource.YAHOO_FLEA)
+    external_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    price: Mapped[int] = mapped_column(Integer, nullable=False)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    listing_status: Mapped[str] = mapped_column(String(16), nullable=False, default=ListingStatus.OPEN)
+    is_adopted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    exclusion_reason: Mapped[str | None] = mapped_column(String(32))
+    first_seen_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    last_seen_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint("source", "external_id", name="uq_sale_listings_source_external_id"),
+        Index("ix_sale_listings_card_pk", "card_pk"),
+    )
+
+
+class DailyPrice(Base):
+    """カードごとの日次相場（販売中の平均）。"""
+
+    __tablename__ = "daily_prices"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    card_pk: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False
+    )
+    date: Mapped[dt.date] = mapped_column(Date, nullable=False)
+    average_asking_price: Mapped[int | None] = mapped_column(Integer)
+    asking_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (UniqueConstraint("card_pk", "date", name="uq_daily_prices_card_date"),)

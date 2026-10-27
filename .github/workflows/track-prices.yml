@@ -1,0 +1,60 @@
+name: ER・PRカードの相場を記録する
+
+# Yahoo!フリマの販売中の出品を、ER・PRカード(26枚)だけ記録して日次平均を
+# 計算する手動ワークフロー。アイカツ！アンコールは発売間もなく(2026-10-08〜)
+# で件数も少ないため、カドソバのような成約価格の追跡（消えた出品を個別
+# ページで確認する）はしない、ずっと軽い作り（app/jobs/track_prices.py）。
+#
+# robots.txt で禁止されている「売却済みだけに絞り込む検索」は使わない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "数えるだけ（保存しない）"
+        type: boolean
+        required: false
+        default: true
+      code:
+        description: "対象を1枚に絞る（official_code、例: E1-78_PR / 空なら全ER・PR）"
+        required: false
+        default: ""
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TZ: Asia/Tokyo
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: マイグレーション（sale_listings / daily_prices）
+        run: python -m alembic upgrade head
+
+      - name: 相場を記録する
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="--dry-run"
+          fi
+          if [ -n "${{ inputs.code }}" ]; then
+            ARGS="$ARGS --code ${{ inputs.code }}"
+          fi
+          python -m app.jobs.track_prices $ARGS
