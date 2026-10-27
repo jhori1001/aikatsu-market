@@ -1,26 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getCards, getSeriesList, type Card } from "@/lib/cards";
+import { Suspense } from "react";
+import { getCards, getIdolList, getRarityList, getSeriesList, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
+import { CardArt } from "@/components/CardThumb";
+import { CardFilters } from "@/components/CardFilters";
 import { ErrorBox } from "@/components/ErrorBox";
 
 export const dynamic = "force-dynamic";
 
-const PER_PAGE = 60;
+const PER_PAGE = 48;
 
 export const metadata: Metadata = {
   title: `カード図鑑｜${SITE.name}`,
-  description: `『${SITE.game}』の収録カードを一覧で。画像つきの図鑑です。`,
+  description: `『${SITE.game}』の収録カードを一覧で。シリーズ・レアリティ・アイドルで絞り込める図鑑です。`,
   alternates: { canonical: "/cards" },
 };
-
-const SERIES_LABEL: Record<string, string> = {
-  E1: "1弾",
-};
-
-function seriesLabel(code: string): string {
-  return SERIES_LABEL[code] ?? code;
-}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -34,25 +29,12 @@ function cardHref(card: Card) {
 }
 
 function CardTile({ card }: { card: Card }) {
-  const src = card.has_front
-    ? `/img/cards/${encodeURIComponent(card.official_code)}/front-thumb.webp`
-    : null;
   return (
     <Link href={cardHref(card)} className="card-tile">
-      <div className="card-art">
-        {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={card.name ?? card.official_code} loading="lazy" decoding="async" />
-        ) : (
-          <div className="card-art-empty">画像なし</div>
-        )}
-      </div>
+      <CardArt card={card} />
       <div className="card-meta">
         <div className="card-name">{card.name ?? "（名称未入力）"}</div>
-        <div className="card-sub">
-          <span className="card-code">{card.official_code}</span>
-          {card.rarity ?? ""}
-        </div>
+        <div className="card-sub">{card.idol_name ?? card.official_code}</div>
       </div>
     </Link>
   );
@@ -66,15 +48,25 @@ export default async function CardsPage({
   const sp = await searchParams;
   const page = Math.max(1, Number(first(sp.page)) || 1);
   const series = first(sp.series) || null;
+  const rarity = first(sp.rarity) || null;
+  const idol = first(sp.idol) || null;
   const q = first(sp.q) || null;
 
   let listRes;
   let seriesOptions: string[] = [];
+  let rarityOptions: string[] = [];
+  let idolOptions: string[] = [];
   try {
-    [listRes, seriesOptions] = await Promise.all([
-      getCards({ q, series, page, per_page: PER_PAGE }),
+    const [list, seriesList, rarityList, idolList] = await Promise.all([
+      getCards({ q, series, rarity, idol, page, per_page: PER_PAGE }),
       getSeriesList(),
+      getRarityList(),
+      getIdolList(),
     ]);
+    listRes = list;
+    seriesOptions = seriesList;
+    rarityOptions = rarityList;
+    idolOptions = idolList.map((i) => i.idol_name);
   } catch (error) {
     return (
       <>
@@ -91,6 +83,8 @@ export default async function CardsPage({
     const next = new URLSearchParams();
     if (q) next.set("q", q);
     if (series) next.set("series", series);
+    if (rarity) next.set("rarity", rarity);
+    if (idol) next.set("idol", idol);
     next.set("page", String(target));
     return `/cards?${next.toString()}`;
   }
@@ -98,31 +92,11 @@ export default async function CardsPage({
   return (
     <>
       <h1 className="page-title">カード図鑑</h1>
-      <p className="page-sub">{total.toLocaleString("ja-JP")}枚 · {SITE.game}の収録カード</p>
+      <p className="page-sub">{total.toLocaleString("ja-JP")}枚 · タップすると大きな画像で見られます</p>
 
-      <div className="toolbar">
-        <form method="get" className="search-row">
-          <input type="search" name="q" defaultValue={q ?? ""} placeholder="カード名・アイドル名で検索" />
-          {series ? <input type="hidden" name="series" value={series} /> : null}
-          <button type="submit" className="primary">検索</button>
-        </form>
-        {seriesOptions.length > 1 ? (
-          <div className="chip-scroll">
-            <Link href="/cards" className={!series ? "chip active" : "chip"}>
-              すべて
-            </Link>
-            {seriesOptions.map((s) => (
-              <Link
-                key={s}
-                href={`/cards?series=${encodeURIComponent(s)}`}
-                className={series === s ? "chip active" : "chip"}
-              >
-                {seriesLabel(s)}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-      </div>
+      <Suspense fallback={<div className="toolbar" />}>
+        <CardFilters seriesOptions={seriesOptions} rarityOptions={rarityOptions} idolOptions={idolOptions} />
+      </Suspense>
 
       {items.length === 0 ? (
         <div className="empty">

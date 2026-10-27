@@ -1,16 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import "./globals.css";
-import { SITE, PAGES } from "@/lib/site";
+import { Footer } from "@/components/Footer";
+import { HeaderSearch } from "@/components/HeaderSearch";
+import { MyListLink } from "@/components/MyListLink";
+import { SITE } from "@/lib/site";
 
-const DESCRIPTION = `『${SITE.game}』の収録カードを一覧できる図鑑サイトです。`;
+const DESCRIPTION = `『${SITE.game}』の収録カードを画像つきで一覧できる図鑑サイトです。`;
 const TITLE = `${SITE.game} カード図鑑｜${SITE.name}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: { default: TITLE, template: `%s` },
   description: DESCRIPTION,
-  // ドメイン・公開範囲が確定するまでは検索結果に出さない
   robots: SITE.isPublic ? undefined : { index: false, follow: false },
   openGraph: {
     type: "website",
@@ -28,7 +30,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#ffffff",
+  themeColor: "#fff6fa",
 };
 
 const NAV: { href: string; label: string }[] = [{ href: "/cards", label: "カード図鑑" }];
@@ -37,6 +39,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: SITE.name,
+              url: SITE.url,
+              inLanguage: "ja",
+              description: DESCRIPTION,
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: `${SITE.url}/cards?q={search_term_string}`,
+                },
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
         <header className="site-header">
           <div className="site-header-inner">
             <Link href="/" className="brand">
@@ -48,28 +71,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {item.label}
                 </Link>
               ))}
+              <MyListLink />
             </nav>
+            <HeaderSearch />
           </div>
         </header>
 
         <main>{children}</main>
 
-        <footer className="site-footer">
-          <div className="site-footer-inner">
-            <nav className="footer-nav">
-              {PAGES.map((p) => (
-                <Link key={p.href} href={p.href}>
-                  {p.label}
-                </Link>
-              ))}
-            </nav>
-            {SITE.rights.map((r) => (
-              <p key={r} className="footer-rights">
-                {r}
-              </p>
-            ))}
-          </div>
-        </footer>
+        <Footer />
       </body>
     </html>
   );
