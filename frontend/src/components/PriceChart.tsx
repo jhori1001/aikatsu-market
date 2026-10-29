@@ -23,7 +23,24 @@ function niceScale(values: number[]): { domain: [number, number]; ticks: number[
   if (values.length === 0) return undefined;
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const spread = max === min ? Math.max(Math.abs(min) * 0.2, 100) : max - min;
+
+  if (min === max) {
+    // 点が1つしか無いとき（今の記録はまだ日数が浅く、ほとんどのカードが
+    // これに当たる）。上下の余白を「きりのいい数字」に丸めると、値が
+    // 丸め目盛りのどこに落ちるかで点の高さが毎回バラバラになる
+    // （2026-10-29、ユーザー指摘：複数カードを並べると点の位置が不揃い）。
+    // 丸めずに値の真上・真下へ同じ幅で余白を取り、必ず縦の中央に来るようにする。
+    const rawPad = Math.max(Math.abs(min) * 0.2, 100);
+    const lo = Math.max(0, min - rawPad);
+    const pad = min - lo; // 0円付近で切り詰められても、中央からのずれを同じに保つ
+    const hi = min + pad;
+    const step = niceStep((hi - lo) / 4 || 1);
+    const ticks: number[] = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(Math.round(v));
+    return { domain: [lo, hi], ticks };
+  }
+
+  const spread = max - min;
   const step = niceStep(spread / 4);
   const lo = Math.max(0, Math.floor((min - spread * 0.1) / step) * step);
   const hi = Math.ceil((max + spread * 0.1) / step) * step;
