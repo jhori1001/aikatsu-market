@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getCards, getIdolList, getRarityList, getSeriesList, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
-import { getLatestPrices } from "@/lib/realPrice";
+import { getLatestPrices, getTrackedData } from "@/lib/realPrice";
 import { yen } from "@/lib/format";
 import { CardArt } from "@/components/CardThumb";
 import { CardFilters } from "@/components/CardFilters";
@@ -48,6 +48,8 @@ const SORT_LABEL: Record<string, string> = {
   code: "番号順",
   price_desc: "参考価格が高い順",
   price_asc: "参考価格が安い順",
+  change_desc: "値上がり順（7日間）",
+  change_asc: "値下がり順（7日間）",
 };
 
 export default async function CardsPage({
@@ -86,6 +88,26 @@ export default async function CardsPage({
         <ErrorBox error={error instanceof Error ? error.message : String(error)} />
       </>
     );
+  }
+
+  // 値上がり・値下がり順（ホームの「値上がり」「値下がり」の続き）。
+  // 7日間の変化率で並べ、変化が出せないカードは最後に置く
+  if (sort === "change_desc" || sort === "change_asc") {
+    let ratios = new Map<number, number | null>();
+    try {
+      const tracked = await getTrackedData(matched.filter((m) => m.price !== null).map((m) => m.card.id));
+      ratios = new Map([...tracked].map(([id, d]) => [id, d.summary.change7.ratio]));
+    } catch (error) {
+      return <ErrorBox error={error instanceof Error ? error.message : String(error)} />;
+    }
+    const dir = sort === "change_desc" ? -1 : 1;
+    matched.sort((a, b) => {
+      const ra = ratios.get(a.card.id) ?? null;
+      const rb = ratios.get(b.card.id) ?? null;
+      if (ra === null) return rb === null ? 0 : 1;
+      if (rb === null) return -1;
+      return dir * (ra - rb);
+    });
   }
 
   // 価格が無いカード（R・N、まだ記録が無いER・PR）は並び順に関わらず最後に置く

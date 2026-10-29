@@ -8,11 +8,33 @@ import { CardArt } from "@/components/CardThumb";
 import { ErrorBox } from "@/components/ErrorBox";
 import { BigTile } from "@/components/BigTile";
 import { RankTile } from "@/components/RankTile";
+import { Carousel } from "@/components/Carousel";
 
 export const dynamic = "force-dynamic";
 
 function num(n: number): string {
   return n.toLocaleString("ja-JP");
+}
+
+// カドソバのホームと同じく、並びは5枚で止めて6枚目を「すべて見る」にする
+const RANK_SIZE = 5;
+
+/**
+ * 並びの最後に置く「すべて見る」（カドソバの MoreTile と同じ）。
+ * 隣のカードと同じ大きさにして、並びから浮かないようにしている。
+ * グラフ付きの大きいタイルの並びには置かない（見出しの右の「すべて見る」で足りる）。
+ */
+function MoreTile({ href }: { href: string }) {
+  return (
+    <Link href={href} className="rank-tile more-tile">
+      <div className="more-box">
+        <span className="more-box-text">
+          すべて見る
+          <span aria-hidden="true"> →</span>
+        </span>
+      </div>
+    </Link>
+  );
 }
 
 export default async function HomePage() {
@@ -46,16 +68,16 @@ export default async function HomePage() {
   const topPriced = [...priced]
     .filter((p) => p.data.summary.current !== null)
     .sort((a, b) => (b.data.summary.current ?? 0) - (a.data.summary.current ?? 0))
-    .slice(0, 8);
-  const overall = topPriced.slice(0, 10);
+    .slice(0, RANK_SIZE);
+  const overall = topPriced;
   const gainers = [...priced]
     .filter((p) => (p.data.summary.change7.ratio ?? 0) > 0)
     .sort((a, b) => (b.data.summary.change7.ratio ?? 0) - (a.data.summary.change7.ratio ?? 0))
-    .slice(0, 10);
+    .slice(0, RANK_SIZE);
   const losers = [...priced]
     .filter((p) => (p.data.summary.change7.ratio ?? 0) < 0)
     .sort((a, b) => (a.data.summary.change7.ratio ?? 0) - (b.data.summary.change7.ratio ?? 0))
-    .slice(0, 10);
+    .slice(0, RANK_SIZE);
 
   return (
     <>
@@ -127,11 +149,12 @@ export default async function HomePage() {
               すべて見る
             </Link>
           </div>
-          <div className="rank-scroll">
+          {/* 1枚ずつ止める（惰性で2枚3枚と飛ばさない）。カドソバと同じ */}
+          <Carousel variant="snap-one">
             {topPriced.map(({ card, data }) => (
               <BigTile key={card.id} card={card} data={data} />
             ))}
-          </div>
+          </Carousel>
         </section>
       ) : (
         <section className="rank-section">
@@ -150,8 +173,11 @@ export default async function HomePage() {
             <h2 className="section-head-title">
               値上がり <small>前7日間・ER・PRのみ</small>
             </h2>
+            <Link href="/cards?sort=change_desc" className="section-more">
+              すべて見る
+            </Link>
           </div>
-          <div className="rank-scroll">
+          <Carousel>
             {gainers.map(({ card, data }, i) => (
               <RankTile
                 key={card.id}
@@ -161,7 +187,8 @@ export default async function HomePage() {
                 ratio={data.summary.change7.ratio}
               />
             ))}
-          </div>
+            <MoreTile href="/cards?sort=change_desc" />
+          </Carousel>
         </section>
       ) : null}
 
@@ -171,8 +198,11 @@ export default async function HomePage() {
             <h2 className="section-head-title">
               値下がり <small>前7日間・ER・PRのみ</small>
             </h2>
+            <Link href="/cards?sort=change_asc" className="section-more">
+              すべて見る
+            </Link>
           </div>
-          <div className="rank-scroll">
+          <Carousel>
             {losers.map(({ card, data }, i) => (
               <RankTile
                 key={card.id}
@@ -182,7 +212,8 @@ export default async function HomePage() {
                 ratio={data.summary.change7.ratio}
               />
             ))}
-          </div>
+            <MoreTile href="/cards?sort=change_asc" />
+          </Carousel>
         </section>
       ) : null}
 
@@ -192,6 +223,9 @@ export default async function HomePage() {
             <h2 className="section-head-title">
               総合ランキング <small>ER・PRのみ</small>
             </h2>
+            <Link href="/cards?sort=price_desc" className="section-more">
+              すべて見る
+            </Link>
           </div>
           <div className="rank-list">
             {overall.map(({ card, data }, i) => (
@@ -200,7 +234,7 @@ export default async function HomePage() {
                 href={`/cards/${encodeURIComponent(card.official_code)}`}
                 className="rank-row-item"
               >
-                <span className="rank-row-no">{i + 1}</span>
+                <span className={`rank-row-no ${i < 3 ? `medal-${i + 1}` : ""}`}>{i + 1}</span>
                 <div className="rank-row-art">
                   <CardArt card={card} showChip={false} />
                 </div>
@@ -224,6 +258,11 @@ export default async function HomePage() {
                 </div>
               </Link>
             ))}
+            {/* 6行目は続きへの入口。5枚で止まると、ここで終わりだと思われる */}
+            <Link href="/cards?sort=price_desc" className="rank-row-item rank-row-more">
+              すべて見る
+              <span aria-hidden="true">→</span>
+            </Link>
           </div>
           <p className="sample-note">
             ※ 価格・ランキングはER・PRカードのみ、Yahoo!フリマの販売中の出品から算出しています。

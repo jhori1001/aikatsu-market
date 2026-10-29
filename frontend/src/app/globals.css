@@ -638,14 +638,14 @@ button:active {
 /* ---------------- セクション見出し ---------------- */
 
 .rank-section {
-  margin-top: 30px;
+  margin-top: 26px;
 }
 
 .section-head {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   padding-left: 10px;
   border-left: 3px solid var(--border-strong);
 }
@@ -861,8 +861,8 @@ button:active {
     grid-template-columns: 280px minmax(0, 1fr);
     grid-template-areas:
       "art head"
-      "art buy"
       "art price"
+      "art buy"
       "art chart";
     column-gap: 24px;
     align-items: start;
@@ -870,6 +870,26 @@ button:active {
   .detail-art-col {
     align-self: center;
   }
+  /* 以下カドソバと同じ。上段のグラフは詰め気味に */
+  .detail-hero .chart-box {
+    height: 270px;
+  }
+  .detail-hero .price-hero {
+    font-size: 42px;
+  }
+  .detail-hero .stat-mini-row {
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+  .detail-hero .range-tabs {
+    margin-top: 10px;
+  }
+}
+
+/* グラフはヒーロー内の列幅に従うので、単独時の幅制限は外す */
+.detail-hero .price-panel {
+  max-width: none;
+  margin-top: 12px;
 }
 
 /* スマホでは画像の隣の細い列に収める必要があるので、
@@ -892,6 +912,17 @@ button:active {
   }
   .detail-hero .chart-box {
     height: 210px;
+  }
+  .detail-hero .price-panel {
+    max-width: none;
+  }
+  .detail-hero .range-tabs {
+    margin-top: 8px;
+    gap: 4px;
+  }
+  .detail-hero .range-tabs button {
+    padding: 7px 2px;
+    font-size: 12px;
   }
 }
 
@@ -1083,7 +1114,7 @@ button:active {
   display: flex;
   flex-direction: column;
   margin-top: 12px;
-  padding-top: 10px;
+  padding-top: 4px;
   border-top: 1px solid var(--border);
 }
 
@@ -1092,7 +1123,7 @@ button:active {
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  padding: 4px 0;
+  padding: 3px 0;
   white-space: nowrap;
 }
 
@@ -1199,20 +1230,130 @@ button:active {
 
 /* ---------------- 大きいタイル（絵・相場・ミニグラフ、横スクロール） ---------------- */
 
-.rank-scroll {
+/* カドソバの .rank-carousel と同じ（components/Carousel.tsx が使う） */
+.rank-carousel {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
   overflow-x: auto;
-  padding: 4px 2px 8px;
+  padding: 4px 2px 6px;
   margin: 0 -2px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
+  /* 惰性で流れても行き過ぎないよう、止め位置は指を離した時点の次の1枚 */
+  overscroll-behavior-x: contain;
+  /* 横スクロールのバーは出さない。指やホイールで動かせれば足りる */
   scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.rank-scroll::-webkit-scrollbar {
+.rank-carousel::-webkit-scrollbar {
   display: none;
+}
+
+/* PCは並びが横幅に収まって左に寄って見えるので中央に置く。
+   "safe center" なら入りきらない並びでも左端が隠れない */
+@media (min-width: 820px) {
+  .rank-carousel {
+    justify-content: safe center;
+  }
+}
+
+/* マウスで掴んで動かせるようにする。掴めることが分かるようカーソルを変える */
+@media (hover: hover) and (pointer: fine) {
+  .rank-carousel {
+    cursor: grab;
+  }
+  .rank-carousel:active {
+    cursor: grabbing;
+    user-select: none;
+  }
+  .rank-carousel img {
+    -webkit-user-drag: none;
+  }
+}
+
+/* 1枚ずつ確実に止める並び。惰性で2枚3枚と飛ばさない */
+.rank-carousel.snap-one {
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 2px;
+}
+
+/* 掴んで引っぱっている間だけ吸い付きを切る。
+   付けたままだとブラウザが定位置へ戻そうとして、指の動きと喧嘩する */
+.rank-carousel.dragging {
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+}
+
+/* ---------------- 横スクロールの矢印 ---------------- */
+
+.carousel {
+  position: relative;
+}
+
+/* 指で触れる端末ではスワイプできるので矢印は出さない */
+.carousel-nav {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0 2px;
+  }
+  .carousel-nav.prev {
+    left: -6px;
+  }
+  .carousel-nav.next {
+    right: -6px;
+  }
+  .carousel-nav:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* 横に並んだカードの下に出す帯。スクロールバーを隠しているので、
+   これが「まだ先がある」ことといまどのあたりかを示す */
+.carousel-bar {
+  position: relative;
+  height: 4px;
+  margin: 8px auto 2px;
+  width: min(240px, 62%);
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.carousel-bar-thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: left 0.08s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel-bar-thumb {
+    transition: none;
+  }
 }
 
 .big-tile {
@@ -1233,6 +1374,14 @@ button:active {
 
 .big-tile-head {
   display: block;
+  /* 横にスライドさせるとき、絵や文字が掴まれて選択されないように */
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.big-tile-head img {
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 .big-tile-name {
@@ -1247,7 +1396,7 @@ button:active {
 }
 
 .big-tile-chips {
-  margin: 0 0 8px;
+  margin-bottom: 8px;
 }
 
 .big-tile-body {
@@ -1283,22 +1432,20 @@ button:active {
 
 .big-tile-diff {
   margin-top: 2px;
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
   font-size: 13px;
   font-weight: 800;
 }
 
 .big-tile-diff-label {
+  margin-right: 4px;
   font-size: 11px;
-  color: var(--text-faint);
   font-weight: 700;
+  color: var(--text-faint);
 }
 
 .big-tile .stat-mini-row {
   margin-top: 8px;
-  padding-top: 8px;
+  padding-top: 2px;
 }
 
 .big-tile .stat-mini-item {
@@ -1332,6 +1479,10 @@ button:active {
   font-weight: 800;
   text-align: center;
   box-shadow: 0 2px 8px rgba(255, 95, 162, 0.3);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .big-tile-more::after {
@@ -1351,6 +1502,49 @@ button:active {
   .big-tile-more::after {
     animation: none;
   }
+  .big-tile-more,
+  .big-tile-more span {
+    transition: none;
+  }
+}
+
+/* 並んだボタンが一斉に光ると点滅に見えるので、順番をずらす */
+.rank-carousel .big-tile:nth-child(2n) .big-tile-more::after {
+  animation-delay: 1.6s;
+}
+.rank-carousel .big-tile:nth-child(3n) .big-tile-more::after {
+  animation-delay: 3.2s;
+}
+
+/* 押した矢印が右へ進む。押した先が「次のページ」だと分かるように */
+.big-tile-more span {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.big-tile-more:active {
+  background: var(--accent-dark);
+  transform: translateY(0);
+}
+
+@media (hover: hover) {
+  .big-tile-more:hover {
+    background: var(--accent-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 95, 162, 0.36);
+  }
+  .big-tile-more:hover span {
+    transform: translateX(3px);
+  }
+}
+
+/* 凡例を出さない小さいグラフに添える、線の名前 */
+.chart-caption {
+  margin-top: 2px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint);
 }
 
 .chart-empty {
@@ -1368,8 +1562,19 @@ button:active {
 
 .rank-tile {
   flex: 0 0 auto;
-  width: 128px;
+  /* 縦長カード(600x870)を基準にした幅。146 x 870/600 = 約212px の画像になる */
+  width: 146px;
   scroll-snap-align: start;
+  transition: transform 0.12s ease;
+}
+
+@media (hover: hover) {
+  .rank-tile:hover {
+    transform: translateY(-3px);
+  }
+  .rank-tile:hover .card-art {
+    box-shadow: var(--shadow);
+  }
 }
 
 .rank-tile-art {
@@ -1378,6 +1583,8 @@ button:active {
 
 .rank-tile .card-art {
   border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.12s ease;
 }
 
 .rank-tile-no {
@@ -1409,22 +1616,22 @@ button:active {
 }
 
 .rank-tile-meta {
-  padding: 8px 2px 0;
+  padding: 8px 2px 2px;
 }
 
 .rank-tile-name {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 700;
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.4em;
+  min-height: 2.6em;
 }
 
 .rank-tile-label {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: 10px;
   font-weight: 600;
   color: var(--text-faint);
@@ -1439,21 +1646,53 @@ button:active {
 }
 
 .rank-tile-price {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
 .rank-tile-delta {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 800;
+  margin-top: 1px;
+}
+
+/* 並びの最後に置く「すべて見る」。隣のカードと同じ大きさの箱にして、
+   6枚目として自然に続けて見えるようにする */
+.more-tile {
+  display: flex;
+  align-items: flex-start;
+}
+
+.more-box {
+  width: 100%;
+  aspect-ratio: 600 / 870;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.more-box-text {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1.4;
+}
+
+@media (hover: hover) {
+  .more-tile:hover .more-box {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
 }
 
 /* ---------------- 総合ランキング（縦並び） ---------------- */
 
 .rank-list {
-  display: flex;
-  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1461,73 +1700,110 @@ button:active {
 }
 
 .rank-row-item {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 26px 68px minmax(0, 1fr);
+  align-items: start;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--border);
 }
 
-.rank-row-item:last-child {
+.rank-list .rank-row-item:last-child {
   border-bottom: none;
 }
 
-.rank-row-no {
-  width: 20px;
-  text-align: center;
-  font-weight: 800;
-  color: var(--text-faint);
-  font-size: 13px;
-  flex: 0 0 auto;
+.rank-row-item:active {
+  background: var(--surface-2);
 }
 
-.rank-row-art {
-  width: 40px;
-  flex: 0 0 auto;
+@media (hover: hover) {
+  .rank-row-item:hover {
+    background: var(--surface-2);
+  }
+}
+
+.rank-row-no {
+  justify-self: center;
+  margin-top: 2px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 1〜3位は金銀銅。並びの上位が一目で分かるように */
+.rank-row-no.medal-1 {
+  background: linear-gradient(140deg, #e8b64a, #c8921f);
+  color: #fff;
+}
+.rank-row-no.medal-2 {
+  background: linear-gradient(140deg, #c9c3cf, #9890a0);
+  color: #fff;
+}
+.rank-row-no.medal-3 {
+  background: linear-gradient(140deg, #cf9264, #a76c42);
+  color: #fff;
 }
 
 .rank-row-art .card-art {
-  border-radius: 7px;
+  border-radius: 6px;
 }
 
 .rank-row-body {
-  flex: 1;
   min-width: 0;
 }
 
 .rank-row-name {
-  font-size: 13px;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .rank-row-price {
-  margin-top: 2px;
-  font-variant-numeric: tabular-nums;
+  margin-top: 3px;
+  font-size: 16px;
   font-weight: 800;
-  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
 }
 
+/* レアリティ・アイドル。ラベルは控えめに、値だけ読めればよい */
 .rank-row-kv {
-  margin: 3px 0 0;
-  display: flex;
-  gap: 10px;
-  font-size: 11px;
-  color: var(--text-dim);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1px 8px;
+  margin: 6px 0 0;
+  font-size: 12px;
 }
 
 .rank-row-kv dt {
-  display: inline;
-  margin-right: 2px;
   color: var(--text-faint);
+  font-weight: 700;
 }
 
 .rank-row-kv dd {
-  display: inline;
   margin: 0;
+  color: var(--text-dim);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 縦のランキングの最後の行。3列組みを解いて、1行の文字として中央に置く */
+.rank-row-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 14px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--accent);
 }
 
 /* ---------------- フリマで探す ---------------- */
