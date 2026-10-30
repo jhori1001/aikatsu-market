@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { getCards, getIdolList, getRarityList, getSeriesList, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
 import { getLatestPrices, getTrackedData } from "@/lib/realPrice";
+import { getLatestShopPrices, type ShopPrice } from "@/lib/shopPrice";
 import { yen } from "@/lib/format";
 import { CardArt } from "@/components/CardThumb";
 import { CardFilters } from "@/components/CardFilters";
@@ -30,15 +31,36 @@ function cardHref(card: Card) {
   return `/cards/${encodeURIComponent(card.official_code)}`;
 }
 
-function CardTile({ card, price }: { card: Card; price: number | null | undefined }) {
-  const tracked = card.code_suffix === "ER" || card.code_suffix === "PR";
+function CardTile({
+  card,
+  price,
+  shop,
+}: {
+  card: Card;
+  price: number | null;
+  shop: ShopPrice | null;
+}) {
   return (
     <Link href={cardHref(card)} className="card-tile">
       <CardArt card={card} />
       <div className="card-meta">
         <div className="card-name">{card.name ?? "（名称未入力）"}</div>
         <div className="card-sub">{card.idol_name ?? card.official_code}</div>
-        {tracked ? <div className="card-price">{yen(price ?? null)}</div> : null}
+        {price !== null ? (
+          <div className="card-price">
+            <span className="card-price-label">フリマ</span>
+            {yen(price)}
+          </div>
+        ) : shop ? (
+          // フリマの相場が無いカードだけ。相場ではなく店の定価なので、控えめに店名を添える
+          // （カドソバと同じ）
+          <div className="card-price shop">
+            <span className="card-price-label">{shop.shop}</span>
+            {yen(shop.price)}
+          </div>
+        ) : (
+          <div className="card-price none">データ無</div>
+        )}
       </div>
     </Link>
   );
@@ -68,16 +90,21 @@ export default async function CardsPage({
   let seriesOptions: string[] = [];
   let rarityOptions: string[] = [];
   let idolOptions: string[] = [];
-  let matched: { card: Card; price: number | null }[];
+  let matched: { card: Card; price: number | null; shop: ShopPrice | null }[];
   try {
-    const [list, seriesList, rarityList, idolList, prices] = await Promise.all([
+    const [list, seriesList, rarityList, idolList, prices, shops] = await Promise.all([
       getCards({ q, series, rarity, idol, per_page: 200 }),
       getSeriesList(),
       getRarityList(),
       getIdolList(),
       getLatestPrices(),
+      getLatestShopPrices(),
     ]);
-    matched = list.items.map((card) => ({ card, price: prices.get(card.id) ?? null }));
+    matched = list.items.map((card) => ({
+      card,
+      price: prices.get(card.id) ?? null,
+      shop: shops.get(card.id)?.normal ?? null,
+    }));
     seriesOptions = seriesList;
     rarityOptions = rarityList;
     idolOptions = idolList.map((i) => i.idol_name);
@@ -110,14 +137,18 @@ export default async function CardsPage({
     });
   }
 
-  // 価格が無いカード（R・N、まだ記録が無いER・PR）は並び順に関わらず最後に置く
+  // 並び順は画面に出す金額（フリマの相場、無ければショップ参考価格）で決める。
+  // どちらも無いカードは並び順に関わらず最後に置く
+  const shownPrice = (m: (typeof matched)[number]) => m.price ?? m.shop?.price ?? null;
   if (sort === "price_desc") {
-    matched.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
+    matched.sort((a, b) => (shownPrice(b) ?? -1) - (shownPrice(a) ?? -1));
   } else if (sort === "price_asc") {
     matched.sort((a, b) => {
-      if (a.price === null) return 1;
-      if (b.price === null) return -1;
-      return a.price - b.price;
+      const pa = shownPrice(a);
+      const pb = shownPrice(b);
+      if (pa === null) return 1;
+      if (pb === null) return -1;
+      return pa - pb;
     });
   }
 
@@ -143,7 +174,8 @@ export default async function CardsPage({
         {total.toLocaleString("ja-JP")}枚 · タップすると大きな画像で見られます
         <br />
         <span className="sample-note">
-          ※ 価格はER・PRカードのみ、Yahoo!フリマの販売中の出品から算出した参考価格です。
+          ※ 「フリマ」はER・PRカードのみ、Yahoo!フリマの販売中の出品から算出した参考価格です。
+          それ以外はカードショップ（フルアヘッド）の販売価格です。
         </span>
       </p>
 
@@ -159,8 +191,8 @@ export default async function CardsPage({
         </div>
       ) : (
         <div className="card-grid">
-          {items.map(({ card, price }) => (
-            <CardTile key={card.id} card={card} price={price} />
+          {items.map(({ card, price, shop }) => (
+            <CardTile key={card.id} card={card} price={price} shop={shop} />
           ))}
         </div>
       )}

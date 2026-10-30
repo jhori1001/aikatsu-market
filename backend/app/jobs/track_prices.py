@@ -54,6 +54,17 @@ OTHER_SERIES_KEYWORDS = ("スターズ", "フレンズ", "オンパレード", "
 MULTI_KEYWORDS = ("コーデ",)
 MULTI_COUNT_RE = re.compile(r"(?<!\d)([2-9]|\d{2,})\s*枚")
 
+# 服の部位。PR・R・N はトップス・スカート・シューズ…と部位ごとに別カードなので、
+# 自分の部位以外の部位名がタイトルにあれば、2枚以上の出品とみなす
+# （「オーロラキスドレープスカート バレエシューズ」のような、相手の名前を
+# 略して書いた2枚組を見分けるため）。「アクセ」は「アクセカード」の意味でも
+# 使われるので入れない。ER（フルコーデ1枚）は部位名で終わらないので対象外
+PART_WORDS = (
+    "トップス", "スカート", "シューズ", "ブーツ", "パンプス", "サンダル", "ワンピ",
+    "カチューシャ", "ジャケット", "ボレロ", "ブラウス", "ベスト", "キャミソール",
+    "ドレス", "ミュール", "ショートパンツ", "パニエ",
+)
+
 # 旧アイカツ！のカード番号（01-19P、1401-23 など）。名前が同じ別シリーズのカード
 OLD_CODE_RE = re.compile(r"(?<![A-Za-z0-9-])\d{2,4}-\d{2,3}[A-Za-z]?(?![0-9-])")
 
@@ -94,6 +105,9 @@ def exclusion_reason(
         return "parallel"
     if any(k in title for k in OTHER_SERIES_KEYWORDS) or OLD_CODE_RE.search(title):
         return "other_series"
+    own_part = next((w for w in PART_WORDS if card_name.endswith(w)), None)
+    if own_part and any(w not in card_name and w in title for w in PART_WORDS):
+        return "other_card"
     # 自分の名前に含まれる名前（「ピンクステージベスト」と「…ベスト&スカート」）は数えない
     if any(n and n != card_name and n not in card_name and n in title for n in other_names):
         return "other_card"

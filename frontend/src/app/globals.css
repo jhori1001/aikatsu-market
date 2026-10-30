@@ -886,6 +886,23 @@ button:active {
   .detail-hero .price-hero {
     font-size: 42px;
   }
+
+/* 相場が出せないカード。金額と同じ大きさで出すと値段のように見えるので、
+   灰色の控えめな大きさにする（カドソバと同じ） */
+.price-hero.no-data {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--text-faint);
+  padding: 8px 0 6px;
+}
+
+.stat-note {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  margin-top: 10px;
+  line-height: 1.45;
+}
   .detail-hero .stat-mini-row {
     margin-top: 12px;
     padding-top: 10px;
@@ -2437,5 +2454,357 @@ th.num {
 @media (max-width: 480px) {
   .card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---------------- ショップ参考価格（カドソバと同じ） ---------------- */
+
+.card-price.none {
+  color: var(--text-faint);
+  font-weight: 600;
+  font-size: 11.5px;
+}
+
+/* ショップ参考価格。相場ではないので、金額は灰色の細めの字にして、
+   フリマの相場（赤みのある太字）と見分けがつくようにする */
+.card-price.shop {
+  color: var(--text-dim);
+  font-weight: 700;
+  font-size: 12.5px;
+}
+
+/* ---------------- ショップ参考価格（詳細ページ） ----------------
+   相場ではなく店の定価。フリマの相場（赤い大きい字）と混ざらないよう、
+   灰色の落ち着いた枠にして、店の黄色は「店で見る」ボタンとロゴだけに使う。
+
+   置き場所は2つ（同じ中身を2回描き、CSSで一方だけ見せる）。
+     aside … PC幅（820px以上）。価格パネルの右端
+     below … それより狭いとき。グラフのすぐ下 */
+.shop-ref {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.shop-ref-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shop-ref-logo {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  /* ロゴの黄色い地が、灰色の枠から浮かないよう、薄い縁を付ける */
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.07);
+}
+
+.shop-ref-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+
+.shop-ref-price {
+  margin-top: 6px;
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.shop-ref-note {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+/* 在庫0でも行は保存するようになったため、価格が参考程度だと分かるようにする
+   （2026-10-02）。一覧に無いカード（行自体が無い）とは別で、こちらは
+   「最後に見た値段」を薄く・取り消し線つきで出す */
+.shop-ref-soldout-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  background: var(--text-dim);
+  color: #fff;
+}
+
+.shop-ref-soldout .shop-ref-price {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+/* 価格推移のグラフは、この箱の中で開閉する（詳細ページの他の場所に
+   切り離して置かない。ショップの値段とその推移は同じ話なので） */
+.shop-ref-history {
+  margin-top: 6px;
+}
+
+.shop-ref-history > summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.shop-ref-history > summary::-webkit-details-marker {
+  display: none;
+}
+
+.shop-ref-history > summary::before {
+  content: "▸";
+  font-size: 9px;
+  transition: transform 0.15s ease;
+}
+
+.shop-ref-history[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.shop-ref-history > :not(summary) {
+  margin-top: 8px;
+}
+
+/* この箱の中では、値段とその推移が分かれば十分。スパークライン程度に
+   小さく収める（軸の文字で場所を取らせない。キャプションは「フルアヘッドの
+   販売価格」のような、上の価格ですでに言っている内容の繰り返しなので消す） */
+.shop-ref-history .chart-box {
+  height: 80px;
+}
+
+.shop-ref-history .chart-caption {
+  display: none;
+}
+
+/* フリマ相場の期間タブ（.range-tabs）と見た目を揃えるが、
+   こちらは7/30/90日の3つだけなので列数を変える */
+.shop-ref-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.shop-ref-tabs button {
+  padding: 6px 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.shop-ref-tabs button:active {
+  background: var(--surface-2);
+}
+
+.shop-ref-tabs button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* 「店で見る」。店のロゴの黄色に合わせる。サイトの赤（買いに行くボタン）とは別の色にして、
+   「店のページへ行く」ボタンだと一目で分かるようにする */
+.shop-ref-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: #ffe92e;
+  color: #2b2600;
+  font-size: 13.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.shop-ref-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+@media (hover: hover) {
+  .shop-ref-btn:hover {
+    background: #ffdf00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-ref-btn {
+    transition: none;
+  }
+}
+
+/* 狭い画面: グラフの下。左に金額、右に「店で見る」を並べて、背を低く保つ。
+   「価格推移」を開くと左列が伸びるが、ボタンは上揃えにして位置が
+   下にずれないようにする（2026-10-02） */
+.shop-ref-below {
+  margin-top: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 14px;
+}
+
+.shop-ref-below .shop-ref-btn {
+  align-self: start;
+}
+
+/* PC幅: パネルの右端。パネルを2列にして、左は今までの中身、右がこの枠。
+   パネルの高さは、左の中身のほうが高いので変わらない */
+.shop-ref-aside {
+  display: none;
+}
+
+@media (min-width: 820px) {
+  .panel.has-shop {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    column-gap: 18px;
+    align-items: start;
+  }
+
+  .shop-ref-aside {
+    display: grid;
+    margin-top: 2px;
+  }
+
+  .shop-ref-below {
+    display: none;
+  }
+}
+
+.card-price-label {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* ショップ参考価格のグラフ（詳細ページ）は、金額と横並びの「店で見る」
+   ボタンぶん幅を取られて実測で幅223px前後しかなく、.detail-hero .chart-box
+   の高さ(210px/270px)をそのまま使うと縦長〜正方形になって見えていた
+   （2026-10-07、「横長にして」）。.detail-hero .chart-box と同じ
+   詳細度（2クラス）なので、後ろに書いて上書きする必要がある
+   （先に書くと .detail-hero .chart-box に負ける。.shop-ref-history
+   .chart-box が同じ理由で無効化されていたのと同じ罠）。 */
+.shop-ref-below .chart-box,
+.shop-ref-aside .chart-box {
+  height: 120px;
+}
+
+/* ---------------- 出品一覧の表（カドソバの SalesTable と同じ） ---------------- */
+
+/* 種別（売却済み＝緑）・状態（傷あり＝ピンク）のバッジ */
+.badge-high {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.badge-low {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+
+/* 絞り込みの段ごとに、選んだボタンの色を変える（どの段を触っているか分かるように） */
+.segmented.tone-status button.active {
+  background: #e8f1fb;
+  color: #1c5a91;
+}
+.segmented.tone-grade button.active {
+  background: #eaf5ee;
+  color: #16704a;
+}
+.segmented.tone-sort button.active {
+  background: #f3eefb;
+  color: #5b3d94;
+}
+
+.segmented button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.filter-foot {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 720px) {
+  .filter-row .segmented {
+    width: auto;
+  }
+  .filter-row .segmented button {
+    flex: 0 0 auto;
+    padding: 6px 14px;
+    font-size: 12.5px;
+  }
+}
+
+.table-wrap td.title-cell {
+  min-width: 220px;
+  max-width: 420px;
+}
+
+@media (hover: hover) {
+  .title-link:hover {
+    color: var(--accent);
+    text-decoration-color: var(--accent);
+  }
+  .more-btn:hover {
+    background: var(--surface-2);
+  }
+}
+
+.see-btn {
+  letter-spacing: -0.02em;
+}
+
+.see-btn:active {
+  background: var(--accent-dark);
+}
+
+.more-btn {
+  cursor: pointer;
+}
+
+.more-btn:active {
+  transform: scale(0.99);
+}
+
+@media (max-width: 619px) {
+  .table-wrap {
+    font-size: 12.5px;
+  }
+  .table-wrap th,
+  .table-wrap td {
+    padding: 8px 5px;
+  }
+  .table-wrap .badge {
+    padding: 3px 7px;
+    font-size: 11px;
   }
 }

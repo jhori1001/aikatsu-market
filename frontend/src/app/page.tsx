@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getCards, getCatalogSummary, getIdolList, getRareCards, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
-import { getTrackedData } from "@/lib/realPrice";
+import { getTrackedData, type TrackedCardData } from "@/lib/realPrice";
+import { getLatestShopPrices, getShopMiniHistories, type ShopPrice } from "@/lib/shopPrice";
 import { yen } from "@/lib/format";
 import { RARITY_SHORT_LABEL } from "@/lib/rarity";
 import { CardArt } from "@/components/CardThumb";
@@ -65,11 +66,24 @@ export default async function HomePage() {
     .map((card) => ({ card, data: trackedData.get(card.id) }))
     .filter((p): p is { card: Card; data: NonNullable<(typeof p)["data"]> } => Boolean(p.data));
 
-  const topPriced = [...priced]
-    .filter((p) => p.data.summary.current !== null)
-    .sort((a, b) => (b.data.summary.current ?? 0) - (a.data.summary.current ?? 0))
-    .slice(0, RANK_SIZE);
+  // 価格ランキングは全カードから。画面に出す金額（フリマの相場、無ければ
+  // ショップ参考価格）で並べる（カドソバの effectivePrice と同じ考え方）
+  const shops = await getLatestShopPrices();
+  type Ranked = { card: Card; data: TrackedCardData | undefined; shop: ShopPrice | null; price: number };
+  const ranked: Ranked[] = allCards
+    .map((card): Ranked | null => {
+      const data = trackedData.get(card.id);
+      const shop = shops.get(card.id)?.normal ?? null;
+      const price = data?.summary.current ?? shop?.price ?? null;
+      return price === null ? null : { card, data, shop, price };
+    })
+    .filter((r): r is Ranked => r !== null);
+  const topPriced = [...ranked].sort((a, b) => b.price - a.price).slice(0, RANK_SIZE);
   const overall = topPriced;
+  // ショップ参考価格で出すタイルだけ、その推移を引く
+  const shopHistories = await getShopMiniHistories(
+    topPriced.filter((r) => r.data?.summary.current == null).map((r) => r.card.id),
+  );
   const gainers = [...priced]
     .filter((p) => (p.data.summary.change7.ratio ?? 0) > 0)
     .sort((a, b) => (b.data.summary.change7.ratio ?? 0) - (a.data.summary.change7.ratio ?? 0))
@@ -143,7 +157,7 @@ export default async function HomePage() {
         <section className="rank-section">
           <div className="section-head accent-pink">
             <h2 className="section-head-title">
-              価格ランキング <small>Yahoo!フリマ・ER・PRのみ</small>
+              価格ランキング <small>販売中の平均の高い順</small>
             </h2>
             <Link href="/cards?sort=price_desc" className="section-more">
               すべて見る
@@ -151,8 +165,14 @@ export default async function HomePage() {
           </div>
           {/* 1枚ずつ止める（惰性で2枚3枚と飛ばさない）。カドソバと同じ */}
           <Carousel variant="snap-one">
-            {topPriced.map(({ card, data }) => (
-              <BigTile key={card.id} card={card} data={data} />
+            {topPriced.map(({ card, data, shop }) => (
+              <BigTile
+                key={card.id}
+                card={card}
+                data={data}
+                shop={shop}
+                shopPoints={shopHistories.get(card.id)}
+              />
             ))}
           </Carousel>
         </section>
@@ -160,7 +180,7 @@ export default async function HomePage() {
         <section className="rank-section">
           <div className="section-head accent-pink">
             <h2 className="section-head-title">
-              価格ランキング <small>Yahoo!フリマ・ER・PRのみ</small>
+              価格ランキング <small>販売中の平均の高い順</small>
             </h2>
           </div>
           <div className="empty">まだ価格データがありません。記録が溜まると表示されます。</div>
@@ -221,14 +241,14 @@ export default async function HomePage() {
         <section className="rank-section">
           <div className="section-head accent-pink">
             <h2 className="section-head-title">
-              総合ランキング <small>ER・PRのみ</small>
+              総合ランキング <small>販売中の平均の高い順</small>
             </h2>
             <Link href="/cards?sort=price_desc" className="section-more">
               すべて見る
             </Link>
           </div>
           <div className="rank-list">
-            {overall.map(({ card, data }, i) => (
+            {overall.map(({ card, price }, i) => (
               <Link
                 key={card.id}
                 href={`/cards/${encodeURIComponent(card.official_code)}`}
@@ -240,7 +260,7 @@ export default async function HomePage() {
                 </div>
                 <div className="rank-row-body">
                   <div className="rank-row-name">{card.name ?? card.official_code}</div>
-                  <div className="rank-row-price">{yen(data.summary.current)}</div>
+                  <div className="rank-row-price">{yen(price)}</div>
                   <dl className="rank-row-kv">
                     {card.code_suffix ? (
                       <>
@@ -265,7 +285,8 @@ export default async function HomePage() {
             </Link>
           </div>
           <p className="sample-note">
-            ※ 価格・ランキングはER・PRカードのみ、Yahoo!フリマの販売中の出品から算出しています。
+            ※ ER・PRカードはYahoo!フリマの販売中の出品の平均、それ以外とフリマの相場が出せない
+            カードはカードショップ（フルアヘッド）の販売価格です。
           </p>
         </section>
       ) : null}

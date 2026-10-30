@@ -24,6 +24,13 @@ export type RealListing = {
   price: number;
   url: string;
   firstSeenAt: string;
+  lastSeenAt: string;
+  /** open（販売中）/ sold（売却済み）。いまは販売中の出品だけ記録している */
+  listingStatus: string;
+  /** Yahoo!フリマの状態コード（new / used10 …）。古い記録には無い */
+  itemCondition: string | null;
+  /** mint（美品）/ damaged（傷あり）/ unknown */
+  conditionGrade: string | null;
 };
 
 export async function getRealPriceSeries(cardPk: number, days = 90): Promise<RealPricePoint[]> {
@@ -130,11 +137,22 @@ export async function getLatestPrices(): Promise<Map<number, number | null>> {
 }
 
 export async function getRealListings(cardPk: number, limit = 200): Promise<RealListing[]> {
-  const rows = await query<{ id: number; title: string; price: number; url: string; first_seen_at: string }>(
-    `select id, title, price, url, first_seen_at
+  const rows = await query<{
+    id: number;
+    title: string;
+    price: number;
+    url: string;
+    first_seen_at: string;
+    last_seen_at: string;
+    listing_status: string;
+    item_condition: string | null;
+    condition_grade: string | null;
+  }>(
+    `select id, title, price, url, first_seen_at, last_seen_at, listing_status,
+            item_condition, condition_grade
        from sale_listings
-      where card_pk = $1 and is_adopted is true and listing_status = 'open'
-      order by first_seen_at desc
+      where card_pk = $1 and is_adopted is true
+      order by last_seen_at desc
       limit $2`,
     [cardPk, limit],
   );
@@ -144,5 +162,9 @@ export async function getRealListings(cardPk: number, limit = 200): Promise<Real
     price: r.price,
     url: r.url,
     firstSeenAt: r.first_seen_at,
+    lastSeenAt: r.last_seen_at,
+    listingStatus: r.listing_status,
+    itemCondition: r.item_condition,
+    conditionGrade: r.condition_grade,
   }));
 }
