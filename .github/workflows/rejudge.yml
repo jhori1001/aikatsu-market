@@ -1,0 +1,50 @@
+name: 出品の判定を付け直す
+
+# 判定ルール（jobs/track_prices.py の exclusion_reason）を変えたあとに、
+# 保存済みの出品へ当て直し、日次の平均を計算し直す（jobs/rejudge_listings.py）。
+# 外部サイトへはアクセスしない。必ず先に dry_run=true で件数を見る。
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "数えるだけ（書き換えない）"
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  rejudge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TZ: Asia/Tokyo
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: マイグレーション
+        run: python -m alembic upgrade head
+
+      - name: 判定の付け直し
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="--dry-run"
+          fi
+          python -m app.jobs.rejudge_listings $ARGS

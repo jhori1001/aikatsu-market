@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import logging
+import re
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -30,6 +31,7 @@ from app.config import settings
 from app.db import session_scope
 from app.jobs.runner import batch_run
 from app.models import Card, DailyPrice, ListingStatus, LogStatus, SaleListing, SaleSource
+from app.services.conditions import classify
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +43,53 @@ MIN_SAMPLES_FOR_AVERAGE = 3
 BULK_KEYWORDS = ("まとめ", "セット", "コンプリート", "福袋", "大量", "全種", "ばら売り不可")
 
 
-def _exclusion_reason(listing: FleaListing, card_name: str) -> str | None:
-    title = listing.title or ""
+# パラレル版（同じ絵柄の特別仕様）。通常版の数倍の値段が付くので、混ぜると
+# 相場が跳ね上がる（2026-10-30、E1-04 で 16,000円・13,680円が通常版に混ざっていた）
+PARALLEL_KEYWORDS = ("パラレル",)
+
+# 同じカード名の別シリーズ（旧アイカツ！・スターズ等）。名前だけでは区別できない
+OTHER_SERIES_KEYWORDS = ("スターズ", "フレンズ", "オンパレード", "プラネット")
+
+# タイトル中のカード番号（E1-04、SP-014 など）
+CARD_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9])([A-Za-z]{1,3}\d{0,2})-(\d{1,3})(?!\d)")
+
+
+def _same_number(a: str, b: str) -> bool:
+    """E1-4 と E1-04 を同じとみなして比べる。"""
+    pa, na = a.upper().split("-")
+    pb, nb = b.upper().split("-")
+    return pa == pb and int(na) == int(nb)
+
+
+def exclusion_reason(title: str, price: int, card_name: str, card_number: str) -> str | None:
+    """採用しない理由。採用するなら None。
+
+    決められない出品は、どちらかに入れるのではなく入れない（カドソバと同じ考え方）。
+    """
+    title = title or ""
     if any(k in title for k in BULK_KEYWORDS):
         return "bulk"
     if card_name and card_name not in title:
         # カード名がそのままタイトルに無い出品は、別カードやアクセ単体などの
         # 可能性があるため採用しない（確信が持てないものは入れない）
         return "name_mismatch"
-    if listing.price <= 0:
+    if any(k in title for k in PARALLEL_KEYWORDS):
+        return "parallel"
+    if any(k in title for k in OTHER_SERIES_KEYWORDS):
+        return "other_series"
+    # このカード以外の番号が書いてある（別カード・別シリーズ・まとめ）
+    for prefix, num in CARD_NUMBER_RE.findall(title):
+        if not _same_number(f"{prefix}-{num}", card_number):
+            return "other_number"
+    if price <= 0:
         return "invalid_price"
     return None
+
+
+def _exclusion_reason(listing: FleaListing, card: Card) -> str | None:
+    return exclusion_reason(
+        listing.title or "", listing.price, card.name or "", card.official_code.split("_")[0]
+    )
 
 
 def today_jst() -> dt.date:
@@ -103,7 +141,7 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                 stats["listings_found"] += len(listings)
 
                 if dry_run:
-                    adopted = [l for l in listings if _exclusion_reason(l, card.name or "") is None]
+                    adopted = [l for l in listings if _exclusion_reason(l, card) is None]
                     logger.info(
                         "dry-run %s (%s): %d件中 %d件採用見込み",
                         card.official_code, keyword, len(listings), len(adopted),
@@ -117,7 +155,7 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                     for listing in listings:
                         if not listing.is_open:
                             continue
-                        reason = _exclusion_reason(listing, card.name or "")
+                        reason = _exclusion_reason(listing, card)
                         is_adopted = reason is None
                         if is_adopted:
                             adopted_prices.append(listing.price)
@@ -135,6 +173,8 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                             "listing_status": ListingStatus.OPEN,
                             "is_adopted": is_adopted,
                             "exclusion_reason": reason,
+                            "item_condition": listing.condition,
+                            "condition_grade": classify(listing.condition),
                             "last_seen_at": now,
                         }
                         stmt = insert(SaleListing).values(**values)
