@@ -38,6 +38,7 @@ def run(*, dry_run: bool) -> dict:
     stats: Counter = Counter()
     with session_scope() as db:
         cards = {c.id: c for c in db.execute(select(Card)).scalars()}
+        all_names = tuple(c.name for c in cards.values() if c.name)
         listings = db.execute(select(SaleListing)).scalars().all()
 
         changes = []
@@ -46,7 +47,7 @@ def run(*, dry_run: bool) -> dict:
             if card is None:
                 continue
             reason = exclusion_reason(
-                l.title, l.price, card.name or "", card.official_code.split("_")[0]
+                l.title, l.price, card.name or "", card.official_code.split("_")[0], all_names
             )
             adopted = reason is None
             if adopted != l.is_adopted:

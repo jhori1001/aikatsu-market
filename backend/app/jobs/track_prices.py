@@ -50,6 +50,13 @@ PARALLEL_KEYWORDS = ("パラレル",)
 # 同じカード名の別シリーズ（旧アイカツ！・スターズ等）。名前だけでは区別できない
 OTHER_SERIES_KEYWORDS = ("スターズ", "フレンズ", "オンパレード", "プラネット")
 
+# 複数枚の出品（コーデ一式・「22枚」など）。1枚の値段ではない
+MULTI_KEYWORDS = ("コーデ",)
+MULTI_COUNT_RE = re.compile(r"(?<!\d)([2-9]|\d{2,})\s*枚")
+
+# 旧アイカツ！のカード番号（01-19P、1401-23 など）。名前が同じ別シリーズのカード
+OLD_CODE_RE = re.compile(r"(?<![A-Za-z0-9-])\d{2,4}-\d{2,3}[A-Za-z]?(?![0-9-])")
+
 # タイトル中のカード番号（E1-04、SP-014 など）
 CARD_NUMBER_RE = re.compile(r"(?<![A-Za-z0-9])([A-Za-z]{1,3}\d{0,2})-(\d{1,3})(?!\d)")
 
@@ -61,13 +68,23 @@ def _same_number(a: str, b: str) -> bool:
     return pa == pb and int(na) == int(nb)
 
 
-def exclusion_reason(title: str, price: int, card_name: str, card_number: str) -> str | None:
+def exclusion_reason(
+    title: str,
+    price: int,
+    card_name: str,
+    card_number: str,
+    other_names: tuple[str, ...] = (),
+) -> str | None:
     """採用しない理由。採用するなら None。
 
+    other_names は図鑑の他のカードの名前。タイトルに他のカードの名前も
+    入っていたら、2枚以上の出品か別カードなので採用しない。
     決められない出品は、どちらかに入れるのではなく入れない（カドソバと同じ考え方）。
     """
     title = title or ""
     if any(k in title for k in BULK_KEYWORDS):
+        return "bulk"
+    if any(k in title for k in MULTI_KEYWORDS) or MULTI_COUNT_RE.search(title):
         return "bulk"
     if card_name and card_name not in title:
         # カード名がそのままタイトルに無い出品は、別カードやアクセ単体などの
@@ -75,8 +92,11 @@ def exclusion_reason(title: str, price: int, card_name: str, card_number: str) -
         return "name_mismatch"
     if any(k in title for k in PARALLEL_KEYWORDS):
         return "parallel"
-    if any(k in title for k in OTHER_SERIES_KEYWORDS):
+    if any(k in title for k in OTHER_SERIES_KEYWORDS) or OLD_CODE_RE.search(title):
         return "other_series"
+    # 自分の名前に含まれる名前（「ピンクステージベスト」と「…ベスト&スカート」）は数えない
+    if any(n and n != card_name and n not in card_name and n in title for n in other_names):
+        return "other_card"
     # このカード以外の番号が書いてある（別カード・別シリーズ・まとめ）
     for prefix, num in CARD_NUMBER_RE.findall(title):
         if not _same_number(f"{prefix}-{num}", card_number):
@@ -86,9 +106,13 @@ def exclusion_reason(title: str, price: int, card_name: str, card_number: str) -
     return None
 
 
-def _exclusion_reason(listing: FleaListing, card: Card) -> str | None:
+def _exclusion_reason(listing: FleaListing, card: Card, other_names: tuple[str, ...]) -> str | None:
     return exclusion_reason(
-        listing.title or "", listing.price, card.name or "", card.official_code.split("_")[0]
+        listing.title or "",
+        listing.price,
+        card.name or "",
+        card.official_code.split("_")[0],
+        other_names,
     )
 
 
@@ -115,6 +139,10 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
             if codes:
                 stmt = stmt.where(Card.official_code.in_(codes))
             cards = db.execute(stmt).scalars().all()
+            # R・Nも含めた図鑑の全カード名（別カードの名前が入った出品を見分ける）
+            all_names = tuple(
+                n for n in db.execute(select(Card.name).where(Card.name.is_not(None))).scalars() if n
+            )
 
         if not cards:
             logger.warning("対象カード(ER/PR)が見つかりませんでした")
@@ -141,7 +169,7 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                 stats["listings_found"] += len(listings)
 
                 if dry_run:
-                    adopted = [l for l in listings if _exclusion_reason(l, card) is None]
+                    adopted = [l for l in listings if _exclusion_reason(l, card, all_names) is None]
                     logger.info(
                         "dry-run %s (%s): %d件中 %d件採用見込み",
                         card.official_code, keyword, len(listings), len(adopted),
@@ -155,7 +183,7 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                     for listing in listings:
                         if not listing.is_open:
                             continue
-                        reason = _exclusion_reason(listing, card)
+                        reason = _exclusion_reason(listing, card, all_names)
                         is_adopted = reason is None
                         if is_adopted:
                             adopted_prices.append(listing.price)
@@ -178,9 +206,14 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                             "last_seen_at": now,
                         }
                         stmt = insert(SaleListing).values(**values)
+                        # 同じ出品が別のカードの検索でも見つかることがある。そのときに
+                        # 別のカードの物差しで判定を上書きしないよう、同じカードの行だけ
+                        # 更新する（2026-10-30、元のカードでは採用なのに、隣のカードの
+                        # 検索で「名前が無い」と除外に書き換わっていた）
                         stmt = stmt.on_conflict_do_update(
                             constraint="uq_sale_listings_source_external_id",
                             set_={k: stmt.excluded[k] for k in values if k not in {"card_pk", "source", "external_id"}},
+                            where=SaleListing.card_pk == stmt.excluded.card_pk,
                         )
                         db.execute(stmt)
 
