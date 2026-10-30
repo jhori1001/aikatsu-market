@@ -1,0 +1,72 @@
+name: 画面の疎通確認
+
+# 本番と同じDBにつないでサイトを立ち上げ、ページのHTMLを取って、
+# 想定した部品が出ているか数える手動ワークフロー（カドソバの page-check と同じ役目）。
+# 読むだけで、DBには一切書き込まない。外部サイトへもアクセスしない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      paths:
+        description: "開くページ（カンマ区切り）"
+        required: false
+        default: "/,/cards,/cards?sort=price_desc,/cards/E1-04_PR,/cards/E1-13_R"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TZ: Asia/Tokyo
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: サーバーを起動
+        run: |
+          npm run start -- --port 3000 > /tmp/next.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/about -o /dev/null 2>/dev/null; then
+              echo "起動しました"; exit 0
+            fi
+            sleep 2
+          done
+          echo "起動できませんでした"; cat /tmp/next.log; exit 1
+
+      - name: 開いて数える
+        env:
+          PATHS: ${{ inputs.paths }}
+        run: |
+          IFS=',' read -ra LIST <<< "$PATHS"
+          for p in "${LIST[@]}"; do
+            code=$(curl -s -o /tmp/page.html -w "%{http_code}" "http://127.0.0.1:3000$p")
+            echo "=== $p  status=$code  size=$(wc -c < /tmp/page.html)"
+            for key in 'class="big-tile"' 'rank-carousel snap-one' 'more-tile' 'rank-row-more' \
+                       'card-price shop' 'card-price"' 'card-price none' 'shop-ref shop-ref-aside' \
+                       'shop-ref shop-ref-below' 'shop-ref-btn' 'ショップ参考価格' 'パラレル版' \
+                       '販売中の平均' 'tone-status' '<th>種別</th>' '<th>状態</th>' 'データ無' 'idol-select'; do
+              n=$(grep -o "$key" /tmp/page.html | wc -l)
+              echo "   $key: $n"
+            done
+            # 価格の並び（一覧の最初の8枚）
+            grep -o 'card-price[^"]*"><span class="card-price-label">[^<]*</span>[^<]*' /tmp/page.html \
+              | head -8 | sed 's/.*card-price-label">//; s#</span># #' | sed 's/^/   価格: /'
+          done
+          echo "=== サーバーのエラー"
+          grep -i "error" /tmp/next.log | head -20 || true
