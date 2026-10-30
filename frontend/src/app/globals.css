@@ -60,9 +60,10 @@ a {
 
 /* ---------------- ヘッダー ---------------- */
 
+/* 上に固定しない。スクロールすると一緒に流れて消える
+   （2026-10-30、ユーザー指摘「下にスライドしたときついてきて見にくい」） */
 .site-header {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 30;
   min-height: var(--header-h);
   background: rgba(255, 246, 251, 0.9);
@@ -202,10 +203,8 @@ main {
 
 /* ---------------- 絞り込みバー ---------------- */
 
+/* 絞り込みバーも固定しない（ヘッダーと同じ理由） */
 .toolbar {
-  position: sticky;
-  top: calc(var(--header-h) + env(safe-area-inset-top));
-  z-index: 20;
   background: var(--bg);
   padding: 8px 0 12px;
   margin: 0 -14px 14px;
@@ -281,6 +280,16 @@ select {
   min-width: 0;
   -webkit-appearance: none;
   appearance: none;
+}
+
+/* プルダウンの右端に「∨」を描く（appearance: none で標準の矢印が消えるため） */
+select {
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-dim) 50%),
+    linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 19px, calc(100% - 12px) 19px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
 }
 
 button {

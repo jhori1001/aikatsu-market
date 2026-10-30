@@ -51,7 +51,6 @@ export function CardFilters({
     value: v,
     label: RARITY_SHORT_LABEL[v] ?? v,
   }));
-  const idolChips: Chip[] = idolOptions.map((v) => ({ key: "idol", value: v, label: v }));
 
   const hasFilter = Boolean(params.get("series") || params.get("rarity") || params.get("idol") || params.get("q"));
 
@@ -127,7 +126,24 @@ export function CardFilters({
       </div>
 
       <ChipRow chips={rarityChips} />
-      <ChipRow chips={idolChips} />
+
+      {/* アイドルは人数が多く、ボタンを並べると何行も場所を取るのでプルダウンにする
+          （2026-10-30、ユーザー指摘） */}
+      {idolOptions.length > 0 ? (
+        <select
+          className="idol-select"
+          aria-label="アイドルで絞り込む"
+          value={params.get("idol") ?? ""}
+          onChange={(e) => apply({ idol: e.target.value })}
+        >
+          <option value="">アイドル：すべて</option>
+          {idolOptions.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      ) : null}
     </div>
   );
 }
