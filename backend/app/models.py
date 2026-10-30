@@ -212,6 +212,10 @@ class SaleListing(Base):
     listing_status: Mapped[str] = mapped_column(String(16), nullable=False, default=ListingStatus.OPEN)
     is_adopted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     exclusion_reason: Mapped[str | None] = mapped_column(String(32))
+    # Yahoo!フリマの状態コード（new / used10 ...）と、それを美品・傷ありに
+    # 丸めたもの（0003、カドソバと同じ。services/conditions.py）
+    item_condition: Mapped[str | None] = mapped_column(String(16))
+    condition_grade: Mapped[str | None] = mapped_column(String(16))
     first_seen_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -242,3 +246,61 @@ class DailyPrice(Base):
     )
 
     __table_args__ = (UniqueConstraint("card_pk", "date", name="uq_daily_prices_card_date"),)
+
+
+# ---------------------------------------------------------------- ショップ価格
+
+
+class ShopPrice(Base):
+    """カードショップの販売価格（0003、カドソバの shop_prices と同じ作り）。
+
+    いまはフルアヘッド（アイドル館 fullahead-idol.com）だけ。
+    フリマの相場とは別の物差し（店の定価）なので、daily_prices には混ぜない。
+    店の一覧に無いカードは行を作らない。在庫0は stock=0 で行を作る。
+    アイカツはパラレル版がカードの行として無いので、同じカードの
+    パラレル版の値段は is_parallel=true の行として持つ。
+    """
+
+    __tablename__ = "shop_prices"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    card_pk: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False
+    )
+    shop: Mapped[str] = mapped_column(String(32), nullable=False)
+    is_parallel: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    date: Mapped[dt.date] = mapped_column(Date, nullable=False)
+    price: Mapped[int] = mapped_column(Integer, nullable=False)
+    stock: Mapped[int | None] = mapped_column(Integer)
+    url: Mapped[str | None] = mapped_column(Text)
+    fetched_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "card_pk", "shop", "is_parallel", "date", name="uq_shop_prices_card_shop_variant_date"
+        ),
+        Index("ix_shop_prices_date", "date"),
+    )
+
+
+class ShopFetchLog(Base):
+    """ショップの価格を取った日ごとの記録（0003）。
+
+    行が無い日が「一覧に無かった」のか「取得に失敗した」のかを区別するため。
+    """
+
+    __tablename__ = "shop_fetch_logs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    shop: Mapped[str] = mapped_column(String(32), nullable=False)
+    date: Mapped[dt.date] = mapped_column(Date, nullable=False)
+    complete: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    items: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    in_stock: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    fetched_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    __table_args__ = (UniqueConstraint("shop", "date", name="uq_shop_fetch_logs_shop_date"),)

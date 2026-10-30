@@ -1,0 +1,55 @@
+name: ショップ価格を記録する
+
+# フルアヘッド（アイドル館 fullahead-idol.com）のアイカツ！アンコール一覧から
+# 全カード（R・N含む）の販売価格を1日1回記録する（app/jobs/fetch_shop_prices.py）。
+# 一覧2ページを5秒あけて読むだけなので、1回1分ほどで終わる。
+#
+# schedule 起動時は inputs.dry_run が空（"true"と一致しない）なので本番保存になる。
+
+on:
+  schedule:
+    # 16:23 UTC = 1:23 JST（相場の記録 16:13 UTC の少しあと）
+    - cron: "23 16 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "読んで数えるだけ（保存しない）"
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TZ: Asia/Tokyo
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: マイグレーション（shop_prices など）
+        run: python -m alembic upgrade head
+
+      - name: ショップ価格を記録する
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="--dry-run"
+          fi
+          python -m app.jobs.fetch_shop_prices $ARGS
