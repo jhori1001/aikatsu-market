@@ -1,0 +1,20 @@
+name: Neon の使用量を見る
+
+# Neon の API から、今の請求期間の使用量とおおよその料金を出す（scripts/neon_usage.py）。
+# 読むだけ。DBそのものにはつながないので、使用量は増えない。
+# このリポジトリは公開設定なので、GitHub Actions の無料枠も使わない。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  usage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - name: 使用量を出す
+        run: python3 scripts/neon_usage.py
