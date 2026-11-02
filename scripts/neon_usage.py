@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 
 API = "https://console.neon.tech/api/v2"
@@ -43,8 +44,13 @@ def get(path: str, key: str) -> dict:
     req = urllib.request.Request(
         API + path, headers={"Authorization": f"Bearer {key}", "Accept": "application/json"}
     )
-    with urllib.request.urlopen(req, timeout=30) as res:
-        return json.loads(res.read().decode())
+    try:
+        with urllib.request.urlopen(req, timeout=30) as res:
+            return json.loads(res.read().decode())
+    except urllib.error.HTTPError as e:
+        # 何が悪いのか分かるよう、Neon の返した理由を出す（キーそのものは出ない）
+        body = e.read().decode(errors="replace")[:500]
+        raise RuntimeError(f"{path} → HTTP {e.code}: {body}") from None
 
 
 def main() -> int:
@@ -53,12 +59,18 @@ def main() -> int:
         print("NEON_API_KEY が設定されていません（GitHub の Secrets に登録してください）")
         return 1
 
-    projects = get("/projects", key).get("projects", [])
-    if not projects:
-        # 組織のキーでないと、組織に属するプロジェクトは org_id を付けないと出ない
+    # 個人のキーで組織に属するプロジェクトを読むときは org_id が要る
+    # （付けないと 400 が返る）。先に組織を調べ、組織ごとに一覧を取る
+    projects: list[dict] = []
+    try:
         orgs = get("/users/me/organizations", key).get("organizations", [])
-        for org in orgs:
-            projects += get(f"/projects?org_id={org['id']}", key).get("projects", [])
+    except RuntimeError as e:
+        print(f"組織の一覧が取れません（組織のキーの可能性）: {e}")
+        orgs = []
+    for org in orgs:
+        projects += get(f"/projects?org_id={org['id']}", key).get("projects", [])
+    if not orgs:
+        projects = get("/projects", key).get("projects", [])
 
     lines = ["## Neon の今月の使用量", ""]
     total_usd = 0.0
