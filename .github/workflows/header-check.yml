@@ -1,0 +1,25 @@
+name: 配信のキャッシュ確認（一時）
+
+# カドソバ（kadosoba.com）の応答ヘッダーを見て、Vercel の配信網で
+# 使い回されているか（x-vercel-cache）を確かめる一時的なワークフロー。
+# ページを数回開くだけ。確認が済んだら消す。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: ヘッダーを見る
+        run: |
+          for p in / /cards /ranking /robots.txt; do
+            for i in 1 2 3; do
+              echo "=== $p ($i回目)"
+              curl -s -o /dev/null -D - "https://kadosoba.com$p" | grep -i -E "^HTTP|cache-control|x-vercel-cache|^age:|x-matched-path" || true
+              sleep 2
+            done
+          done
+          echo "=== robots.txt の中身"
+          curl -s https://kadosoba.com/robots.txt
