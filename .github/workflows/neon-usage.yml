@@ -5,6 +5,10 @@ name: Neon の使用量を見る
 # このリポジトリは公開設定なので、GitHub Actions の無料枠も使わない。
 
 on:
+  # 毎朝の報告（Claude の予定タスク、7:43 JST）が手動実行できなかったときの
+  # 予備。GitHub の定期実行は数時間遅れることがあるので、報告の前に余裕を持たせる
+  schedule:
+    - cron: "37 19 * * *"   # 4:37 JST
   workflow_dispatch:
 
 jobs:
