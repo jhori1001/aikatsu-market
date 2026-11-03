@@ -73,7 +73,12 @@ def main() -> int:
         projects = get("/projects", key).get("projects", [])
 
     lines = ["## Neon の今月の使用量", ""]
+    # GitHub の「注記」（annotation）にも1行ずつ出す。公開リポジトリの注記は
+    # ログインなしの API で読めるので、毎朝の報告（Claude の予定タスク）が
+    # 認証なしで数字を拾える（ジョブのログは認証が要る）
+    notices: list[str] = []
     total_usd = 0.0
+    total_cu = 0.0
     for p in projects:
         detail = get(f"/projects/{p['id']}", key).get("project", p)
         lines.append(f"### {detail.get('name')}（{detail.get('id')}）")
@@ -85,6 +90,8 @@ def main() -> int:
         storage_gb_month = (detail.get("data_storage_bytes_hour") or 0) / 1e9 / HOURS_PER_MONTH
         usd = compute_h * COMPUTE_USD_PER_CU_HOUR + storage_gb_month * STORAGE_USD_PER_GB_MONTH
         total_usd += usd
+        total_cu += compute_h
+        notices.append(f"{detail.get('name')}: {compute_h:.2f} CU-時間 / ${usd:.2f}")
         lines.append(
             f"- **見積もり: ${usd:.2f}（約{usd * JPY_PER_USD:,.0f}円）** "
             f"= 計算 {compute_h:.2f} CU-時間 + 保存 {storage_gb_month:.4f} GB-月"
@@ -97,6 +104,20 @@ def main() -> int:
         "※ 無料プランのプロジェクトは請求されないが、計算上の額は出している。"
         "実際の請求は Neon の請求書（毎月1日）が正。"
     )
+    period = next(
+        (p.get("consumption_period_start") for p in projects if p.get("consumption_period_start")), ""
+    )
+    import datetime as dt
+
+    now = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).strftime("%Y-%m-%d %H:%M JST")
+    notices.insert(
+        0,
+        f"合計 {total_cu:.2f} CU-時間 / ${total_usd:.2f}（約{total_usd * JPY_PER_USD:,.0f}円）"
+        f" ／ {now}時点・集計開始 {period}",
+    )
+    for n in notices:
+        print(f"::notice title=Neon使用量::{n}")
+
     text = "\n".join(lines)
     print(text)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
