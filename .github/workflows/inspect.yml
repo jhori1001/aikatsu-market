@@ -110,4 +110,19 @@ jobs:
               for r in rows:
                   mark = "  ←相場なし" if r.avg is None else ""
                   print(f"  {r.official_code:<14} {r.name or '':<24} {r.avg if r.avg is not None else '-':>7} ({r.n if r.n is not None else '行なし'}件){mark}")
+              # 相場が無いカードの、保存済みの出品の除外理由と例
+              for r in missing:
+                  print(f"--- {r.official_code} {r.name}: 保存済みの出品")
+                  reasons = cx.execute(text("""
+                      select coalesce(l.exclusion_reason, '採用') as reason, count(*) as n
+                        from sale_listings l join cards c on c.id = l.card_pk
+                       where c.official_code = :code group by 1 order by 2 desc
+                  """), {"code": r.official_code}).all()
+                  print("    " + (", ".join(f"{x.reason} {x.n}件" for x in reasons) or "0件"))
+                  for x in cx.execute(text("""
+                      select l.price, l.exclusion_reason, l.title, l.last_seen_at::date as seen
+                        from sale_listings l join cards c on c.id = l.card_pk
+                       where c.official_code = :code order by l.last_seen_at desc limit 6
+                  """), {"code": r.official_code}).all():
+                      print(f"    {x.seen} {x.price}円 [{x.exclusion_reason or '採用'}] {x.title}")
           PY
