@@ -1,4 +1,8 @@
-"""ER・PRカード(26枚)だけの、Yahoo!フリマ相場バッチ。
+"""ER・PRカード(26枚＋パラレル版12枚)だけの、Yahoo!フリマ相場バッチ。
+
+パラレル版は検索を増やさない。通常版の検索で見つかった出品のうち、タイトルに
+「パラレル」と書かれたものを、パラレル版のカード（cards.is_parallel）の出品として
+記録する（パラレル版のカードが無い番号は、これまでどおり通常版で parallel 除外）。
 
 アイカツ！アンコールは発売間もなく(2026-10-08〜)でカード数も少ないため、
 カドソバのような成約価格の追跡（消えた出品を個別ページで確認して
@@ -79,14 +83,24 @@ def _same_number(a: str, b: str) -> bool:
     return pa == pb and int(na) == int(nb)
 
 
+def is_parallel_title(title: str) -> bool:
+    """タイトルに「パラレル」と書かれた出品か。"""
+    return any(k in (title or "") for k in PARALLEL_KEYWORDS)
+
+
 def exclusion_reason(
     title: str,
     price: int,
     card_name: str,
     card_number: str,
     other_names: tuple[str, ...] = (),
+    *,
+    is_parallel: bool = False,
 ) -> str | None:
     """採用しない理由。採用するなら None。
+
+    is_parallel=True はパラレル版のカードの物差し。「パラレル」と書かれた出品だけを
+    採用し（書かれていなければ not_parallel）、それ以外の決まりは通常版と同じ。
 
     other_names は図鑑の他のカードの名前。タイトルに他のカードの名前も
     入っていたら、2枚以上の出品か別カードなので採用しない。
@@ -101,7 +115,10 @@ def exclusion_reason(
         # カード名がそのままタイトルに無い出品は、別カードやアクセ単体などの
         # 可能性があるため採用しない（確信が持てないものは入れない）
         return "name_mismatch"
-    if any(k in title for k in PARALLEL_KEYWORDS):
+    if is_parallel:
+        if not is_parallel_title(title):
+            return "not_parallel"
+    elif is_parallel_title(title):
         return "parallel"
     if any(k in title for k in OTHER_SERIES_KEYWORDS) or OLD_CODE_RE.search(title):
         return "other_series"
@@ -127,7 +144,23 @@ def _exclusion_reason(listing: FleaListing, card: Card, other_names: tuple[str, 
         card.name or "",
         card.official_code.split("_")[0],
         other_names,
+        is_parallel=card.is_parallel,
     )
+
+
+def base_code(code: str) -> str:
+    """パラレル版の official_code（"E1-01_PR_p1"）から通常版の番号（"E1-01_PR"）を出す。"""
+    return re.sub(r"_p\d+$", "", code)
+
+
+def target_card(listing_title: str, card: Card, parallel_of: dict[str, Card]) -> Card:
+    """この出品をどのカードの出品として記録するか。
+
+    通常版の検索で見つかった「パラレル」入りの出品は、パラレル版のカードがあればそちらへ。
+    """
+    if not card.is_parallel and is_parallel_title(listing_title):
+        return parallel_of.get(card.official_code, card)
+    return card
 
 
 def today_jst() -> dt.date:
@@ -158,6 +191,18 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
             if codes:
                 stmt = stmt.where(Card.official_code.in_(codes))
             cards = db.execute(stmt).scalars().all()
+            # 通常版の番号 → パラレル版のカード（同じ番号に2枚以上あれば決められないので使わない）
+            parallel_cards = db.execute(
+                select(Card).where(Card.is_active.is_(True), Card.is_parallel.is_(True))
+            ).scalars().all()
+            counts: dict[str, int] = {}
+            for p in parallel_cards:
+                counts[base_code(p.official_code)] = counts.get(base_code(p.official_code), 0) + 1
+            parallel_of = {
+                base_code(p.official_code): p
+                for p in parallel_cards
+                if counts[base_code(p.official_code)] == 1
+            }
             # R・Nも含めた図鑑の全カード名（別カードの名前が入った出品を見分ける）
             all_names = tuple(
                 n for n in db.execute(select(Card.name).where(Card.name.is_not(None))).scalars() if n
@@ -187,31 +232,45 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                 stats["cards_processed"] += 1
                 stats["listings_found"] += len(listings)
 
+                parallel_card = parallel_of.get(card.official_code)
+
                 if dry_run:
-                    adopted = [l for l in listings if _exclusion_reason(l, card, all_names) is None]
+                    adopted = []
+                    adopted_parallel = []
+                    for l in listings:
+                        tgt = target_card(l.title or "", card, parallel_of)
+                        if _exclusion_reason(l, tgt, all_names) is None:
+                            (adopted_parallel if tgt.is_parallel else adopted).append(l)
                     logger.info(
-                        "dry-run %s (%s): %d件中 %d件採用見込み",
-                        card.official_code, keyword, len(listings), len(adopted),
+                        "dry-run %s (%s): %d件中 %d件採用見込み／パラレル版 %d件",
+                        card.official_code, keyword, len(listings), len(adopted), len(adopted_parallel),
                     )
-                    stats["adopted"] += len(adopted)
-                    stats["excluded"] += len(listings) - len(adopted)
+                    stats["adopted"] += len(adopted) + len(adopted_parallel)
+                    stats["adopted_parallel"] = stats.get("adopted_parallel", 0) + len(adopted_parallel)
+                    stats["excluded"] += len(listings) - len(adopted) - len(adopted_parallel)
                     continue
 
-                adopted_prices: list[int] = []
+                # カードごとの採用価格（通常版と、あればパラレル版）
+                adopted_prices: dict[int, list[int]] = {card.id: []}
+                if parallel_card is not None:
+                    adopted_prices[parallel_card.id] = []
                 with session_scope() as db:
                     for listing in listings:
                         if not listing.is_open:
                             continue
-                        reason = _exclusion_reason(listing, card, all_names)
+                        tgt = target_card(listing.title or "", card, parallel_of)
+                        reason = _exclusion_reason(listing, tgt, all_names)
                         is_adopted = reason is None
                         if is_adopted:
-                            adopted_prices.append(listing.price)
+                            adopted_prices[tgt.id].append(listing.price)
                             stats["adopted"] += 1
+                            if tgt.is_parallel:
+                                stats["adopted_parallel"] = stats.get("adopted_parallel", 0) + 1
                         else:
                             stats["excluded"] += 1
 
                         values = {
-                            "card_pk": card.id,
+                            "card_pk": tgt.id,
                             "source": SaleSource.YAHOO_FLEA,
                             "external_id": listing.item_id,
                             "title": listing.title,
@@ -236,27 +295,28 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                         )
                         db.execute(stmt)
 
-                    average = None
-                    if len(adopted_prices) >= MIN_SAMPLES_FOR_AVERAGE:
-                        average = round(sum(adopted_prices) / len(adopted_prices) / 10) * 10
-                        stats["cards_with_price"] += 1
-                    else:
-                        stats["cards_without_price"] += 1
+                    for pk, prices in adopted_prices.items():
+                        average = None
+                        if len(prices) >= MIN_SAMPLES_FOR_AVERAGE:
+                            average = round(sum(prices) / len(prices) / 10) * 10
+                            stats["cards_with_price"] += 1
+                        else:
+                            stats["cards_without_price"] += 1
 
-                    price_stmt = insert(DailyPrice).values(
-                        card_pk=card.id,
-                        date=today,
-                        average_asking_price=average,
-                        asking_count=len(adopted_prices),
-                    )
-                    price_stmt = price_stmt.on_conflict_do_update(
-                        constraint="uq_daily_prices_card_date",
-                        set_={
-                            "average_asking_price": price_stmt.excluded.average_asking_price,
-                            "asking_count": price_stmt.excluded.asking_count,
-                        },
-                    )
-                    db.execute(price_stmt)
+                        price_stmt = insert(DailyPrice).values(
+                            card_pk=pk,
+                            date=today,
+                            average_asking_price=average,
+                            asking_count=len(prices),
+                        )
+                        price_stmt = price_stmt.on_conflict_do_update(
+                            constraint="uq_daily_prices_card_date",
+                            set_={
+                                "average_asking_price": price_stmt.excluded.average_asking_price,
+                                "asking_count": price_stmt.excluded.asking_count,
+                            },
+                        )
+                        db.execute(price_stmt)
 
             stats["requests"] = collector.request_count
 

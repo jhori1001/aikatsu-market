@@ -19,10 +19,9 @@ export const dynamic = "force-dynamic";
 
 // フリマの相場を追跡しているのはER・PR(26枚)だけ。
 // それ以外（R・N）と、フリマの相場が出せないER・PRは、ショップ参考価格を出す。
-// パラレル版は図鑑には別カードで載せるが、フリマの相場は通常版だけ追う
-// （出品名でパラレルかどうかを見分けきれないため。パラレル版はショップ価格で出す）。
+// パラレル版も追う（タイトルに「パラレル」と書かれた出品だけを、パラレル版の相場にする）。
 function isTracked(card: { code_suffix: string | null; is_parallel: boolean }): boolean {
-  return !card.is_parallel && (card.code_suffix === "ER" || card.code_suffix === "PR");
+  return card.code_suffix === "ER" || card.code_suffix === "PR";
 }
 
 export async function generateMetadata({
