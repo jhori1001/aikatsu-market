@@ -6,9 +6,11 @@
  */
 
 export const SITE = {
-  name: "アイカツ図鑑",
-  tagline: "アイカツ！アンコールの収録カード図鑑",
+  name: "カドソバ",
+  tagline: "フリマの出品データでわかる、アイカツ！アンコールのカード相場",
   game: "アイカツ！アンコール",
+  /** バナーの大きな見出し用（「アイカツ！アンコール最新相場」） */
+  gameShort: "アイカツ！アンコール",
   officialUrl: "https://dcd.aikatsu.com/encore/",
   owner: "個人運営",
   email: "",

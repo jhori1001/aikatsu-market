@@ -6,8 +6,8 @@ import { HeaderSearch } from "@/components/HeaderSearch";
 import { MyListLink } from "@/components/MyListLink";
 import { SITE } from "@/lib/site";
 
-const DESCRIPTION = `『${SITE.game}』の収録カードを画像つきで一覧できる図鑑サイトです。`;
-const TITLE = `${SITE.game} カード図鑑｜${SITE.name}`;
+const DESCRIPTION = `『${SITE.game}』のカード相場をフリマの出品データからまとめるサイトです。値段の推移・ランキング・出品の内訳を毎日更新します。`;
+const TITLE = `${SITE.game} 最新相場｜${SITE.name}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
@@ -33,7 +33,7 @@ export const viewport: Viewport = {
   themeColor: "#fff6fa",
 };
 
-const NAV: { href: string; label: string }[] = [{ href: "/cards", label: "カード図鑑" }];
+const NAV: { href: string; label: string }[] = [{ href: "/cards", label: "カード" }];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="site-header">
           <div className="site-header-inner">
             <Link href="/" className="brand">
-              アイカツ<span>図鑑</span>
+              カド<span>ソバ</span>
             </Link>
             <nav className="site-nav">
               {NAV.map((item) => (

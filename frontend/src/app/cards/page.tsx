@@ -15,8 +15,8 @@ export const dynamic = "force-dynamic";
 const PER_PAGE = 48;
 
 export const metadata: Metadata = {
-  title: `カード図鑑｜${SITE.name}`,
-  description: `『${SITE.game}』の収録カードを一覧で。シリーズ・レアリティ・アイドルで絞り込める図鑑です。`,
+  title: `カード一覧・相場｜${SITE.name}`,
+  description: `『${SITE.game}』のカードの相場を一覧で。シリーズ・レアリティ・アイドルで絞り込めます。`,
   alternates: { canonical: "/cards" },
 };
 
@@ -111,7 +111,7 @@ export default async function CardsPage({
   } catch (error) {
     return (
       <>
-        <h1 className="page-title">カード図鑑</h1>
+        <h1 className="page-title">カード一覧</h1>
         <ErrorBox error={error instanceof Error ? error.message : String(error)} />
       </>
     );
@@ -169,7 +169,7 @@ export default async function CardsPage({
 
   return (
     <>
-      <h1 className="page-title">カード図鑑</h1>
+      <h1 className="page-title">カード一覧</h1>
       <p className="page-sub">
         {total.toLocaleString("ja-JP")}枚 · タップすると大きな画像で見られます
         <br />

@@ -77,7 +77,7 @@ export default async function CardDetailPage({
   return (
     <>
       <p className="breadcrumb">
-        <Link href="/cards">カード図鑑</Link>
+        <Link href="/cards">カード一覧</Link>
       </p>
 
       <div className="detail-hero">

@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { getCards, getCatalogSummary, getIdolList, getRareCards, type Card } from "@/lib/cards";
+import { getCards, getHomeStats, getIdolList, getRareCards, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
 import { getTrackedData, type TrackedCardData } from "@/lib/realPrice";
 import { getLatestShopPrices, getShopMiniHistories, type ShopPrice } from "@/lib/shopPrice";
 import { yen } from "@/lib/format";
 import { RARITY_SHORT_LABEL } from "@/lib/rarity";
-import { CardArt } from "@/components/CardThumb";
+import { CardArt, thumbUrl } from "@/components/CardThumb";
 import { ErrorBox } from "@/components/ErrorBox";
 import { BigTile } from "@/components/BigTile";
 import { RankTile } from "@/components/RankTile";
@@ -45,7 +45,7 @@ export default async function HomePage() {
   let allCards: Card[];
   try {
     const [s, rare, idolList, list] = await Promise.all([
-      getCatalogSummary(),
+      getHomeStats(),
       getRareCards(14),
       getIdolList(),
       getCards({ per_page: 200 }),
@@ -79,6 +79,12 @@ export default async function HomePage() {
     })
     .filter((r): r is Ranked => r !== null);
   const topPriced = [...ranked].sort((a, b) => b.price - a.price).slice(0, RANK_SIZE);
+  // バナーに並べるカード（カドソバのバナーと同じく4枚）。値段の高い縦向きのカードから
+  const heroCards = [...ranked]
+    .sort((a, b) => b.price - a.price)
+    .map((r) => r.card)
+    .filter((c) => c.has_front && !c.is_landscape)
+    .slice(0, 4);
   const overall = topPriced;
   // ショップ参考価格で出すタイルだけ、その推移を引く
   const shopHistories = await getShopMiniHistories(
@@ -96,15 +102,43 @@ export default async function HomePage() {
   return (
     <>
       <section className="hero">
-        <div className="hero-deco" aria-hidden="true" />
-        <h1 className="hero-title">
-          <span className="phrase">{SITE.game}</span>
-          <span className="phrase flame">カード図鑑</span>
-        </h1>
-        <p className="hero-sub">{SITE.tagline}</p>
-        <Link href="/cards" className="hero-cta">
-          カードをさがす <span aria-hidden="true">→</span>
-        </Link>
+        <div className="hero-banner">
+          <div className="hero-banner-text">
+            <div className="hero-logo" aria-label={SITE.name}>
+              カド<span>ソバ</span>
+            </div>
+            <div className="hero-logo-sub" aria-hidden="true">
+              <span>KADOSOBA</span>
+            </div>
+            <h1 className="hero-title">
+              <span className="hero-title-small">フリマの出品データでわかる</span>
+              <span className="hero-title-big">
+                {SITE.gameShort}
+                <em>最新相場</em>
+              </span>
+            </h1>
+            <p className="hero-sub">販売中の値段で見る、カード相場</p>
+          </div>
+          <div className="hero-banner-cards" aria-hidden="true">
+            {heroCards.map((card, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={card.id}
+                src={thumbUrl(card) ?? ""}
+                alt=""
+                className={`hero-card hero-card-${i}`}
+                loading="eager"
+                decoding="async"
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="hero-cta-row">
+          <Link href="/cards" className="hero-cta">
+            カードを探す <span aria-hidden="true">→</span>
+          </Link>
+        </div>
 
         <div className="hero-stats">
           <div className="hero-stat">
@@ -112,12 +146,12 @@ export default async function HomePage() {
             <div className="hero-stat-label">収録カード</div>
           </div>
           <div className="hero-stat">
-            <div className="hero-stat-value">{num(summary.seriesCount)}</div>
-            <div className="hero-stat-label">シリーズ</div>
+            <div className="hero-stat-value">{num(summary.trackedListings)}</div>
+            <div className="hero-stat-label">追跡中の出品</div>
           </div>
           <div className="hero-stat">
-            <div className="hero-stat-value">{num(summary.idolCount)}</div>
-            <div className="hero-stat-label">登場アイドル</div>
+            <div className="hero-stat-value">{summary.active ? "Active" : "停止中"}</div>
+            <div className="hero-stat-label">更新状態</div>
           </div>
         </div>
       </section>

@@ -169,3 +169,29 @@ export async function getRareCards(limit = 14): Promise<Card[]> {
   );
   return items;
 }
+
+/**
+ * ホームの数字（カドソバのヒーローと同じ3つ）。
+ * - 収録カード: 図鑑に載っているカードの数
+ * - 追跡中の出品: いちばん新しい記録の日に販売中だった、相場に採用している出品の数
+ * - 更新状態: 毎日の相場の記録（track_prices）が2日以内に成功していれば Active
+ */
+export async function getHomeStats(): Promise<{
+  total: number;
+  trackedListings: number;
+  active: boolean;
+}> {
+  const rows = await query<{ total: number; tracked: number; active: boolean }>(
+    `select
+       (select count(*)::int from cards where is_active is true) as total,
+       (select count(*)::int from sale_listings l
+         where l.is_adopted is true and l.listing_status = 'open'
+           and (l.last_seen_at at time zone 'Asia/Tokyo')::date =
+               (select max(date) from daily_prices)) as tracked,
+       exists(select 1 from batches b
+               where b.name = 'track_prices' and b.status = 'success'
+                 and b.finished_at > now() - interval '48 hours') as active`,
+  );
+  const r = rows[0];
+  return { total: r?.total ?? 0, trackedListings: r?.tracked ?? 0, active: Boolean(r?.active) };
+}
