@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import logging
+import re
 from collections import Counter, defaultdict
 from zoneinfo import ZoneInfo
 
@@ -90,6 +91,28 @@ def run(*, dry_run: bool) -> dict:
             changes.append(
                 {"id": l.id, "card_pk": tgt.id, "is_adopted": adopted, "exclusion_reason": reason}
             )
+
+        # パラレル版で採用する出品の確かめ用（カードごとの件数・値段の幅と、怪しい書き方）
+        suspicious_re = re.compile(r"ではな|じゃな|なし|無し|以外|通常|ノーマル|ない")
+        by_parallel = defaultdict(list)
+        listing_by_id = {l.id: l for l in listings}
+        for ch in changes:
+            l = listing_by_id[ch["id"]]
+            pcard = cards.get(ch["card_pk"])
+            if pcard is not None and pcard.is_parallel and ch["is_adopted"]:
+                by_parallel[pcard.official_code].append(l)
+        for code in sorted(by_parallel):
+            ls = sorted(by_parallel[code], key=lambda x: x.price)
+            prices = [x.price for x in ls]
+            logger.info(
+                "パラレル版 %s 採用 %d件: 最安 %d円 / 中央 %d円 / 最高 %d円",
+                code, len(ls), prices[0], prices[len(prices) // 2], prices[-1],
+            )
+            for x in ls[:2] + ls[-2:]:
+                logger.info("    端の出品 %d円 %s", x.price, x.title)
+            for x in ls:
+                if suspicious_re.search(x.title):
+                    logger.info("    要確認 %d円 %s", x.price, x.title)
 
         # 日次の平均を計算し直す（既にある日付の行だけ）
         new_pk = {ch["id"]: ch["card_pk"] for ch in changes}
