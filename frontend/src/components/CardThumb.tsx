@@ -10,15 +10,20 @@ type ThumbCard = Pick<
   | "has_front"
   | "has_back"
   | "is_landscape"
+  | "img_ver"
 >;
 
+function ver(card: ThumbCard): string {
+  return card.img_ver ? `?v=${card.img_ver}` : "";
+}
+
 export function thumbUrl(card: ThumbCard): string | null {
-  return card.has_front ? `/img/cards/${encodeURIComponent(card.official_code)}/front-thumb.webp` : null;
+  return card.has_front ? `/img/cards/${encodeURIComponent(card.official_code)}/front-thumb.webp${ver(card)}` : null;
 }
 
 export function largeUrl(card: ThumbCard, side: "front" | "back"): string | null {
   const has = side === "front" ? card.has_front : card.has_back;
-  return has ? `/img/cards/${encodeURIComponent(card.official_code)}/${side}-large.webp` : null;
+  return has ? `/img/cards/${encodeURIComponent(card.official_code)}/${side}-large.webp${ver(card)}` : null;
 }
 
 /** 一覧のタイル。画像を主役にして、レアリティだけ角に出す。 */

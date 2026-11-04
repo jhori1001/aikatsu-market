@@ -60,7 +60,8 @@ jobs:
             for key in 'class="big-tile"' 'rank-carousel snap-one' 'more-tile' 'rank-row-more' \
                        'card-price shop' 'card-price"' 'card-price none' 'shop-ref shop-ref-aside' \
                        'shop-ref shop-ref-below' 'shop-ref-btn' 'ショップ参考価格' 'パラレル版' \
-                       '販売中の平均' 'tone-status' '<th>種別</th>' '<th>状態</th>' 'データ無' 'idol-select'; do
+                       '販売中の平均' 'tone-status' '<th>種別</th>' '<th>状態</th>' 'データ無' 'idol-select' \
+                       'badge parallel' 'PR★' 'ER★' '_p1/front-thumb.webp?v=' 'E1-01_PR/front-thumb.webp?v='; do
               n=$(grep -o "$key" /tmp/page.html | wc -l)
               echo "   $key: $n"
             done

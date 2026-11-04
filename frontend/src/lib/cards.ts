@@ -17,6 +17,8 @@ export type Card = {
   has_front: boolean;
   has_back: boolean;
   is_landscape: boolean;
+  /** 画像の版（保存した画像の sha256 から作る）。画像を差し替えたらURLが変わり、CDNの古い絵が出ない */
+  img_ver: string | null;
 };
 
 /**
@@ -44,7 +46,9 @@ const CARD_COLUMNS = `
     (select i.width > i.height from card_images i
       where i.card_pk = c.id and i.side = 'front' and i.variant = 'large'),
     false
-  ) as is_landscape
+  ) as is_landscape,
+  (select left(md5(string_agg(i.sha256, ',' order by i.side, i.variant)), 10)
+     from card_images i where i.card_pk = c.id) as img_ver
 `;
 
 export type CardListParams = {
