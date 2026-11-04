@@ -5,7 +5,7 @@ import { getTrackedData, type TrackedCardData } from "@/lib/realPrice";
 import { getLatestShopPrices, getShopMiniHistories, type ShopPrice } from "@/lib/shopPrice";
 import { yen } from "@/lib/format";
 import { RARITY_SHORT_LABEL } from "@/lib/rarity";
-import { CardArt, thumbUrl } from "@/components/CardThumb";
+import { CardArt } from "@/components/CardThumb";
 import { ErrorBox } from "@/components/ErrorBox";
 import { BigTile } from "@/components/BigTile";
 import { RankTile } from "@/components/RankTile";
@@ -79,12 +79,6 @@ export default async function HomePage() {
     })
     .filter((r): r is Ranked => r !== null);
   const topPriced = [...ranked].sort((a, b) => b.price - a.price).slice(0, RANK_SIZE);
-  // バナーに並べるカード（カドソバのバナーと同じく4枚）。値段の高い縦向きのカードから
-  const heroCards = [...ranked]
-    .sort((a, b) => b.price - a.price)
-    .map((r) => r.card)
-    .filter((c) => c.has_front && !c.is_landscape)
-    .slice(0, 4);
   const overall = topPriced;
   // ショップ参考価格で出すタイルだけ、その推移を引く
   const shopHistories = await getShopMiniHistories(
@@ -102,37 +96,22 @@ export default async function HomePage() {
   return (
     <>
       <section className="hero">
-        <div className="hero-banner">
-          <div className="hero-banner-text">
-            <div className="hero-logo" aria-label={SITE.name}>
-              カド<span>ソバ</span>
-            </div>
-            <div className="hero-logo-sub" aria-hidden="true">
-              <span>KADOSOBA</span>
-            </div>
-            <h1 className="hero-title">
-              <span className="hero-title-small">フリマの出品データでわかる</span>
-              <span className="hero-title-big">
-                {SITE.gameShort}
-                <em>最新相場</em>
-              </span>
-            </h1>
-            <p className="hero-sub">販売中の値段で見る、カード相場</p>
-          </div>
-          <div className="hero-banner-cards" aria-hidden="true">
-            {heroCards.map((card, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={card.id}
-                src={thumbUrl(card) ?? ""}
-                alt=""
-                className={`hero-card hero-card-${i}`}
-                loading="eager"
-                decoding="async"
-              />
-            ))}
-          </div>
-        </div>
+        {/* アイキャッチ画像（ユーザー支給、2048×768 を 2000・1000px の webp にしたもの） */}
+        <h1 className="sr-only">
+          {SITE.name}｜{SITE.game} 最新相場
+        </h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className="hero-image"
+          src="/hero-banner-1000.webp"
+          srcSet="/hero-banner-1000.webp 1000w, /hero-banner.webp 2000w"
+          sizes="(min-width: 1040px) 1000px, 100vw"
+          width={2000}
+          height={750}
+          alt={`${SITE.name} フリマの相場がわかる アイカツ最新相場`}
+          fetchPriority="high"
+          decoding="async"
+        />
 
         <div className="hero-cta-row">
           <Link href="/cards" className="hero-cta">

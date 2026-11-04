@@ -21,6 +21,13 @@ export const metadata: Metadata = {
     url: SITE.url,
     title: TITLE,
     description: DESCRIPTION,
+    images: [{ url: "/hero-banner.webp", width: 2000, height: 750, alt: SITE.name }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/hero-banner.webp"],
   },
   formatDetection: { telephone: false },
 };

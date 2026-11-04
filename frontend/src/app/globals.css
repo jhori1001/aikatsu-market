@@ -525,7 +525,7 @@ button:active {
 }
 
 /* ---------------- ホームのヒーロー ---------------- */
-/* カドソバのヒーローと同じ組み立て: 白いカードの中に、ロゴと見出しのバナー（右にカード4枚）、
+/* カドソバのヒーローと同じ組み立て: 白いカードの中に、アイキャッチ画像、
    「カードを探す」ボタン、下に灰色の帯で3つの数字。色だけアイカツのピンク */
 
 .hero {
@@ -538,186 +538,25 @@ button:active {
   margin-bottom: 4px;
 }
 
-.hero-banner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 190px;
-  padding: 18px 0 14px 16px;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 88% 30%, rgba(167, 139, 250, 0.22) 0%, transparent 55%),
-    radial-gradient(circle at 70% 90%, rgba(255, 95, 162, 0.18) 0%, transparent 50%),
-    linear-gradient(120deg, #ffffff 0%, #fff4f9 55%, #f6f0ff 100%);
-}
-
-.hero-banner-text {
-  position: relative;
-  z-index: 5;
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align: left;
-}
-
-.hero-logo {
-  font-family: "Zen Maru Gothic", sans-serif;
-  font-weight: 900;
-  font-size: 38px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: #1d1418;
-  transform: skewX(-8deg);
-  transform-origin: left bottom;
-  white-space: nowrap;
-}
-
-.hero-logo span {
-  color: var(--accent);
-}
-
-.hero-logo-sub {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 6px 0 12px;
-  color: #1d1418;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.42em;
-}
-
-.hero-logo-sub::before,
-.hero-logo-sub::after {
-  content: "";
-  flex: 0 0 22px;
-  height: 1px;
-  background: #1d1418;
-}
-
-.hero-title {
-  margin: 0;
-  font-family: "Zen Maru Gothic", sans-serif;
-  font-weight: 900;
-  color: #1d1418;
-  line-height: 1.25;
-}
-
-.hero-title-small {
+.hero-image {
   display: block;
-  font-size: 12.5px;
-  letter-spacing: 0.02em;
-}
-
-.hero-title-big {
-  display: block;
-  font-size: 16px;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-
-/* 「最新相場」は1行で大きく（ゲーム名が長いので、カドソバの1行を2行に分けている） */
-.hero-title-big em {
-  display: block;
-  font-style: normal;
-  font-size: 1.75em;
-  line-height: 1.1;
-  color: var(--accent);
-}
-
-.hero-sub {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 8px 0 0;
-  color: var(--text-dim);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.hero-sub::before {
-  content: "";
-  flex: 0 0 22px;
-  height: 1px;
-  background: var(--accent);
-}
-
-/* 右のカード4枚（真ん中の1枚を大きく前に、左右を少し傾けて後ろに） */
-.hero-banner-cards {
-  position: relative;
-  flex: 0 0 48%;
-  height: 190px;
-  margin-right: -10px;
-}
-
-.hero-card {
-  position: absolute;
-  top: 50%;
-  width: 46%;
-  aspect-ratio: 5 / 7;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2000 / 750;
   object-fit: cover;
-  border-radius: 6px;
-  box-shadow: 0 6px 16px rgba(58, 34, 51, 0.28);
-  background: var(--surface-2);
+  background: var(--accent-soft);
 }
 
-.hero-card-0 {
-  left: 18%;
-  z-index: 4;
-  width: 58%;
-  transform: translateY(-52%) rotate(-2deg);
-}
-.hero-card-1 {
-  left: -4%;
-  z-index: 3;
-  width: 42%;
-  transform: translateY(-42%) rotate(-8deg);
-}
-.hero-card-2 {
-  left: 54%;
-  z-index: 2;
-  width: 42%;
-  transform: translateY(-44%) rotate(5deg);
-}
-.hero-card-3 {
-  left: 72%;
-  z-index: 1;
-  width: 40%;
-  transform: translateY(-40%) rotate(10deg);
-}
-
-/* ロゴと見出しが十分に入る幅になってから大きくする（狭いとカードと重なるため） */
-@media (min-width: 820px) {
-  .hero-banner {
-    min-height: 260px;
-    padding: 26px 0 20px 32px;
-  }
-  .hero-logo {
-    font-size: 64px;
-  }
-  .hero-logo-sub {
-    font-size: 11px;
-    margin: 10px 0 18px;
-  }
-  .hero-title-small {
-    font-size: 18px;
-  }
-  .hero-title-big {
-    font-size: 28px;
-  }
-  .hero-sub {
-    font-size: 12px;
-  }
-  .hero-banner-cards {
-    height: 270px;
-    flex: 0 0 340px;
-    margin-right: 24px;
-  }
-  .hero-banner {
-    min-height: 300px;
-  }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hero-cta-row {
