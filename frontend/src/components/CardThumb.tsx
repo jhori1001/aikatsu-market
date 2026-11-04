@@ -1,9 +1,15 @@
 import { rarityClass } from "@/lib/rarity";
-import type { Card } from "@/lib/cards";
+import { suffixLabel, type Card } from "@/lib/cards";
 
 type ThumbCard = Pick<
   Card,
-  "official_code" | "name" | "code_suffix" | "has_front" | "has_back" | "is_landscape"
+  | "official_code"
+  | "name"
+  | "code_suffix"
+  | "is_parallel"
+  | "has_front"
+  | "has_back"
+  | "is_landscape"
 >;
 
 export function thumbUrl(card: ThumbCard): string | null {
@@ -29,7 +35,7 @@ export function CardArt({ card, showChip = true }: { card: ThumbCard; showChip?:
         <div className="card-art-empty">画像なし</div>
       )}
       {showChip && card.code_suffix ? (
-        <span className={`rarity-chip ${cls}`}>{card.code_suffix}</span>
+        <span className={`rarity-chip ${cls}`}>{suffixLabel(card)}</span>
       ) : null}
     </div>
   );

@@ -16,8 +16,14 @@ export function dayLabel(value: string | null | undefined): string {
 }
 
 /** フリマサイトで探すときの検索語。カード名とアイドル名をつなげるだけ。 */
-export function searchKeyword(card: { name: string | null; idol_name: string | null }): string {
-  return [card.name ?? "", card.idol_name ?? ""].filter(Boolean).join(" ");
+export function searchKeyword(card: {
+  name: string | null;
+  idol_name: string | null;
+  is_parallel?: boolean;
+}): string {
+  return [card.name ?? "", card.idol_name ?? "", card.is_parallel ? "パラレル" : ""]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function mercariSearchUrl(keyword: string): string {

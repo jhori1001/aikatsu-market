@@ -79,7 +79,11 @@ def run(*, dry_run: bool = False) -> dict[str, int]:
     with session_scope() as db:
         # official_code は "E1-04_PR"。"_" より前がショップのカード番号と同じ
         pks: dict[str, int] = {}
-        for pk, code in db.execute(select(Card.id, Card.official_code)):
+        # パラレル版のカード（"E1-01_PR_p1"）も同じ番号になるので通常版だけ見る。
+        # ショップのパラレル版の値段は、これまでどおり通常版の card_pk に is_parallel=true で持つ
+        for pk, code in db.execute(
+            select(Card.id, Card.official_code).where(Card.is_parallel.is_(False))
+        ):
             pks.setdefault(code.split("_")[0], pk)
 
         rows = []

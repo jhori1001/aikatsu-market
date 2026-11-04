@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCard } from "@/lib/cards";
+import { displayCode, getCard } from "@/lib/cards";
 import { SITE } from "@/lib/site";
 import { RARITY_SHORT_LABEL, rarityClass } from "@/lib/rarity";
 import { getRealPriceSeries, getRealSummary, getRealListings } from "@/lib/realPrice";
@@ -19,8 +19,10 @@ export const dynamic = "force-dynamic";
 
 // フリマの相場を追跡しているのはER・PR(26枚)だけ。
 // それ以外（R・N）と、フリマの相場が出せないER・PRは、ショップ参考価格を出す。
-function isTracked(code_suffix: string | null): boolean {
-  return code_suffix === "ER" || code_suffix === "PR";
+// パラレル版は図鑑には別カードで載せるが、フリマの相場は通常版だけ追う
+// （出品名でパラレルかどうかを見分けきれないため。パラレル版はショップ価格で出す）。
+function isTracked(card: { code_suffix: string | null; is_parallel: boolean }): boolean {
+  return !card.is_parallel && (card.code_suffix === "ER" || card.code_suffix === "PR");
 }
 
 export async function generateMetadata({
@@ -30,7 +32,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const card = await getCard(decodeURIComponent(id)).catch(() => null);
-  const name = card?.name ?? card?.official_code ?? "カード";
+  const name = (card?.name ?? card?.official_code ?? "カード") + (card?.is_parallel ? "（パラレル）" : "");
   const bits = [card?.idol_name, card?.rarity].filter(Boolean);
   return {
     title: `${name}${bits.length ? `（${bits.join(" ")}）` : ""}｜${SITE.name}`,
@@ -47,7 +49,7 @@ export default async function CardDetailPage({
   const card = await getCard(decodeURIComponent(id));
   if (!card) notFound();
 
-  const tracked = isTracked(card.code_suffix);
+  const tracked = isTracked(card);
   const keyword = searchKeyword(card);
 
   let priceSeries: { date: string; price: number }[] = [];
@@ -86,7 +88,8 @@ export default async function CardDetailPage({
               {card.name ?? "（名称未入力）"}
             </h1>
             <div className="chip-row">
-              <span className="badge mono">{card.official_code}</span>
+              <span className="badge mono">{displayCode(card)}</span>
+              {card.is_parallel ? <span className="badge parallel">パラレル</span> : null}
               {card.code_suffix ? (
                 <span className={`badge ${rarityClass(card.code_suffix)}`}>
                   {RARITY_SHORT_LABEL[card.code_suffix] ?? card.code_suffix}

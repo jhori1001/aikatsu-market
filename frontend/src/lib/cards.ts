@@ -19,6 +19,20 @@ export type Card = {
   is_landscape: boolean;
 };
 
+/**
+ * 画面に出すカード番号。パラレル版は official_code が "E1-01_PR_p1" なので、
+ * 末尾の "_p1" を外して通常版と同じ番号で見せる（パラレルは別の札で示す）。
+ */
+export function displayCode(card: Pick<Card, "official_code">): string {
+  return card.official_code.replace(/_p\d+$/, "");
+}
+
+/** レアリティの記号。パラレル版はショップの表記に合わせて「★」を付ける（PR★・ER★） */
+export function suffixLabel(card: Pick<Card, "code_suffix" | "is_parallel">): string | null {
+  if (!card.code_suffix) return null;
+  return card.is_parallel ? `${card.code_suffix}★` : card.code_suffix;
+}
+
 // カード画像の向き。バトスラと違い card_type のような種別が無いので、
 // 実際に保存した表面(large)画像の縦横を見て判定する（横 > 縦 なら横向き）。
 const CARD_COLUMNS = `

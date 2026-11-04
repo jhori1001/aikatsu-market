@@ -149,7 +149,12 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
 
     with batch_run(JOB_NAME) as ctx:
         with session_scope() as db:
-            stmt = select(Card).where(Card.is_active.is_(True), Card.code_suffix.in_(TARGET_SUFFIXES))
+            stmt = select(Card).where(
+                Card.is_active.is_(True),
+                Card.code_suffix.in_(TARGET_SUFFIXES),
+                # パラレル版は別カードとして図鑑に載せるが、フリマの相場は通常版だけ追う
+                Card.is_parallel.is_(False),
+            )
             if codes:
                 stmt = stmt.where(Card.official_code.in_(codes))
             cards = db.execute(stmt).scalars().all()

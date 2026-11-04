@@ -11,6 +11,11 @@
   2. 画像を取得し、縮小して card_images に保存（見に来た人の
      ブラウザに公式サーバーを直接叩かせない）
   3. 今回の一覧に出てこなかった既存カードも、そのまま残す（無効にしない）
+  4. パラレル版（公式の画像名 "E1-01_PR_p1"）は別のカードとして持つ
+     （is_parallel=true）。新しく作るときだけ、通常版の name / idol_name を写す
+  5. 保存済みの画像の取得元URLが、いまのカードの画像URLと違えば取り直す
+     （以前は通常版とパラレル版が1枚に潰れていて、どちらの絵が入ったか
+     分からないため）
 """
 
 from __future__ import annotations
@@ -84,6 +89,54 @@ def _apply_auto_fields(card: Card, collected: CollectedCard) -> bool:
     return changed
 
 
+def _report_dry_run(collected_cards: list[CollectedCard], stats: dict) -> None:
+    """保存はせず、DBと見比べて「保存したら何が変わるか」を数える（読むだけ）。"""
+    with session_scope() as db:
+        existing = {c.official_code: c for c in db.execute(select(Card)).scalars().all()}
+        image_src = {
+            (row.card_pk, row.side): row.source_url
+            for row in db.execute(
+                select(CardImage.card_pk, CardImage.side, CardImage.source_url).where(
+                    CardImage.variant == "large"
+                )
+            ).all()
+        }
+    new = [c for c in collected_cards if c.official_code not in existing]
+    url_changed = []
+    image_mismatch = []
+    for c in collected_cards:
+        card = existing.get(c.official_code)
+        if card is None:
+            continue
+        if card.image_front_url != c.image_front_url or (
+            c.image_back_url and card.image_back_url != c.image_back_url
+        ):
+            url_changed.append(f"{c.official_code}: {card.image_front_url} → {c.image_front_url}")
+        for side, url in (("front", c.image_front_url), ("back", c.image_back_url)):
+            src = image_src.get((card.id, side))
+            if url and src and src != url:
+                image_mismatch.append(f"{c.official_code} {side}: 保存済み {src} / 公式 {url}")
+    stats["would_create"] = len(new)
+    stats["url_changed"] = len(url_changed)
+    stats["image_mismatch"] = len(image_mismatch)
+    logger.info("dry-run: DBのカード %d 枚 / 新しく作る %d 枚", len(existing), len(new))
+    for c in new:
+        base = existing.get(c.base_code or "")
+        logger.info(
+            "  新規 %s（パラレル=%s 通常版の名前=%s / %s）",
+            c.official_code,
+            c.is_parallel,
+            base.name if base else None,
+            base.idol_name if base else None,
+        )
+    logger.info("dry-run: 画像URLが変わるカード %d 枚", len(url_changed))
+    for line in url_changed:
+        logger.info("  %s", line)
+    logger.info("dry-run: 保存済みの画像の取得元が公式と違う %d 件", len(image_mismatch))
+    for line in image_mismatch:
+        logger.info("  %s", line)
+
+
 def run(*, skip_images: bool = False, dry_run: bool = False) -> dict:
     now = dt.datetime.now(dt.timezone.utc)
     stats: dict = {
@@ -109,10 +162,17 @@ def run(*, skip_images: bool = False, dry_run: bool = False) -> dict:
                 logger.error("1枚も取得できませんでした。HTML構造の変更を疑ってください。")
                 return stats
 
+            parallels = [c for c in collected_cards if c.is_parallel]
+            stats["parallel"] = len(parallels)
+            logger.info(
+                "うちパラレル版 %d 枚: %s",
+                len(parallels),
+                ", ".join(c.official_code for c in parallels),
+            )
+
             if dry_run:
+                _report_dry_run(collected_cards, stats)
                 ctx.stats = stats
-                for card in collected_cards[:5]:
-                    logger.info("dry-run: %s", card)
                 logger.info("--dry-run のため DB へは書き込みませんでした")
                 return stats
 
@@ -133,10 +193,21 @@ def run(*, skip_images: bool = False, dry_run: bool = False) -> dict:
                         )
                         _apply_auto_fields(card, collected)
                         card.is_active = True
+                        card.is_parallel = collected.is_parallel
+                        base = existing.get(collected.base_code or "")
+                        if base is not None:
+                            # 名前は手入力の列。新しく作るときだけ通常版から写す
+                            card.name = base.name
+                            card.idol_name = base.idol_name
                         db.add(card)
                         stats["created"] += 1
+                        logger.info("新しいカード: %s", collected.official_code)
                     else:
-                        if _apply_auto_fields(card, collected):
+                        changed = _apply_auto_fields(card, collected)
+                        if collected.is_parallel and not card.is_parallel:
+                            card.is_parallel = True
+                            changed = True
+                        if changed:
                             stats["updated"] += 1
                         card.last_seen_at = now
                         card.is_active = True
@@ -158,13 +229,15 @@ def run(*, skip_images: bool = False, dry_run: bool = False) -> dict:
                         .scalars()
                         .all()
                     )
+                    # (card_pk, side, variant) → 取得元URL
                     existing_images = {
-                        (row.card_pk, row.side, row.variant)
+                        (row.card_pk, row.side, row.variant): row.source_url
                         for row in db.execute(
                             select(
                                 CardImage.card_pk,
                                 CardImage.side,
                                 CardImage.variant,
+                                CardImage.source_url,
                             )
                         ).all()
                     }
@@ -175,10 +248,20 @@ def run(*, skip_images: bool = False, dry_run: bool = False) -> dict:
                             if not url:
                                 continue
                             have_all = all(
-                                (card.id, side, v) in existing_images for v in ("thumb", "large")
+                                existing_images.get((card.id, side, v)) == url
+                                for v in ("thumb", "large")
                             )
                             if have_all:
                                 continue
+                            if (card.id, side, "large") in existing_images:
+                                stats["images_replaced"] = stats.get("images_replaced", 0) + 1
+                                logger.info(
+                                    "画像を取り直します %s %s: %s → %s",
+                                    card.official_code,
+                                    side,
+                                    existing_images[(card.id, side, "large")],
+                                    url,
+                                )
 
                             try:
                                 response = collector.fetch_image(url)

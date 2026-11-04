@@ -59,7 +59,9 @@ export default async function HomePage() {
   }
 
   // 実相場を追跡しているのはER・PR(26枚)だけ
-  const tracked = allCards.filter((c) => c.code_suffix === "ER" || c.code_suffix === "PR");
+  const tracked = allCards.filter(
+    (c) => !c.is_parallel && (c.code_suffix === "ER" || c.code_suffix === "PR"),
+  );
   const trackedData = await getTrackedData(tracked.map((c) => c.id));
 
   const priced = tracked

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { dayLabel, num, yen } from "@/lib/format";
 import { RARITY_SHORT_LABEL, rarityClass } from "@/lib/rarity";
-import type { Card } from "@/lib/cards";
+import { displayCode, type Card } from "@/lib/cards";
 import type { TrackedCardData } from "@/lib/realPrice";
 import type { ShopPrice, ShopPricePoint } from "@/lib/shopPrice";
 import { CardArt } from "@/components/CardThumb";
@@ -59,7 +59,8 @@ export function BigTile({
       <div className="big-tile-head">
         <div className="big-tile-name">{card.name ?? "（名称未入力）"}</div>
         <div className="chip-row big-tile-chips">
-          <span className="badge mono">{card.official_code}</span>
+          <span className="badge mono">{displayCode(card)}</span>
+          {card.is_parallel ? <span className="badge parallel">パラレル</span> : null}
           {card.code_suffix ? (
             <span className={`badge ${rarityClass(card.code_suffix)}`}>
               {RARITY_SHORT_LABEL[card.code_suffix] ?? card.code_suffix}

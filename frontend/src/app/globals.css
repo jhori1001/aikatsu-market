@@ -481,6 +481,10 @@ button:active {
   background: var(--surface-2);
   color: var(--text-dim);
 }
+.badge.parallel {
+  background: linear-gradient(135deg, #ff9ad5, #b8a4ff, #8fd8ff);
+  color: #fff;
+}
 
 .mono {
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;

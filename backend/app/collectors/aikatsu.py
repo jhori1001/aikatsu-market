@@ -13,6 +13,11 @@
   - **カード名・アイドル名はHTMLに1文字も存在しない。** 取得できるのは
     画像ファイル名（例: "E1-01_PR"）と表/裏の画像URLだけ。
     "E1-01_PR" = 弾コード"E1" + カード番号"01" + レアリティ記号"PR"
+  - **パラレル版は通常版と同じ alt（例: "E1-01_PR"）で載る。** 見分けられるのは
+    画像ファイル名の "_p1"（E1-01_PR_p1.webp / E1-01_PR_p1_b.webp）と、
+    モーダルの id（cardModal-E1-01_PR_p1）だけ（2026-11-04 実測、probe_official）。
+    alt を official_code にすると通常版とパラレル版が1枚に潰れるので、
+    official_code は画像ファイル名の幹（"E1-01_PR_p1"）から取る。
   - 指定した弾は1回のGETで全件が返ってくる（実測: series=629001で85件が
     1レスポンスに収まっていた。追加のページングリクエストは不要）
 """
@@ -32,6 +37,8 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 CODE_RE = re.compile(r"^([A-Za-z]+\d+)-(\d+)(?:_(.+))?$")
+# パラレル版の目印（画像ファイル名・モーダルidの末尾 "_p1" "_p2" …）
+PARALLEL_RE = re.compile(r"_p(\d+)$")
 
 RARITY_LABELS = {
     "PR": "プレミアムレア",
@@ -51,6 +58,9 @@ class CollectedCard:
     image_front_url: str
     image_back_url: str | None
     official_url: str
+    is_parallel: bool = False
+    # パラレル版のときの通常版の official_code（例: "E1-01_PR"）
+    base_code: str | None = None
 
 
 class AikatsuCollector:
@@ -128,10 +138,26 @@ class AikatsuCollector:
                 if back_img is not None:
                     back_src = back_img.get("data-src") or back_img.get("src")
 
+            # パラレル版は alt が通常版と同じ。モーダルid → 画像ファイル名の順で見分ける
+            official_code = alt
+            parallel_tag = None
+            modal_id = (modal.get("id") or "") if modal is not None else ""
+            if modal_id.startswith("cardModal-"):
+                m = PARALLEL_RE.search(modal_id)
+                if m and modal_id[len("cardModal-"):] == f"{alt}{m.group(0)}":
+                    parallel_tag = m.group(0)
+            if parallel_tag is None:
+                stem = front_src.rsplit("/", 1)[-1].split(".", 1)[0]
+                m = PARALLEL_RE.search(stem)
+                if m and stem == f"{alt}{m.group(0)}":
+                    parallel_tag = m.group(0)
+            if parallel_tag:
+                official_code = f"{alt}{parallel_tag}"
+
             series_code, card_number, suffix = self._parse_code(alt)
             entries.append(
                 CollectedCard(
-                    official_code=alt,
+                    official_code=official_code,
                     series_code=series_code,
                     card_number=card_number,
                     code_suffix=suffix,
@@ -141,6 +167,8 @@ class AikatsuCollector:
                     official_url=f"{self.BASE_URL}?search=true&series={series_code}"
                     if series_code
                     else self.BASE_URL,
+                    is_parallel=parallel_tag is not None,
+                    base_code=alt if parallel_tag else None,
                 )
             )
         return entries
@@ -166,6 +194,8 @@ class AikatsuCollector:
                 continue
             found = self._parse_entries(soup)
             for entry in found:
+                if entry.official_code in cards:
+                    logger.warning("同じ番号が2回出ました（後のほうを使います）: %s", entry.official_code)
                 cards[entry.official_code] = entry
             logger.info("series=%s: %d枚（累計 %d枚）", series, len(found), len(cards))
 
