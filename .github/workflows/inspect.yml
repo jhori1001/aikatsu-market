@@ -87,3 +87,33 @@ jobs:
               print()
               print(f"一覧ページで一度に読み込む想定（front thumb 全件合計）: {total_thumb/1024:.1f} KB")
           PY
+
+      - name: フリマの相場（ER・PR とパラレル版）の最新の日
+        run: |
+          python - <<'PY'
+          from sqlalchemy import create_engine, text
+          from app.config import settings
+
+          eng = create_engine(settings.database_url)
+          with eng.connect() as cx:
+              latest = cx.execute(text("select max(date) from daily_prices")).scalar_one()
+              print(f"最新の日: {latest}")
+              rows = cx.execute(text("""
+                  select c.official_code, c.name, d.average_asking_price as avg, d.asking_count as n
+                    from cards c
+                    left join daily_prices d on d.card_pk = c.id and d.date = :d
+                   where c.is_active and c.code_suffix in ('ER', 'PR') and c.series_code = 'E1'
+                   order by c.official_code
+              """), {"d": latest}).all()
+              missing = [r for r in rows if r.avg is None]
+              print(f"対象 {len(rows)} 枚 / 相場あり {len(rows) - len(missing)} 枚 / 相場なし {len(missing)} 枚")
+              for r in rows:
+                  mark = "  ←相場なし" if r.avg is None else ""
+                  print(f"  {r.official_code:<14} {r.name or '':<24} {r.avg if r.avg is not None else '-':>7} ({r.n if r.n is not None else '行なし'}件){mark}")
+              promo = cx.execute(text("""
+                  select official_code from cards
+                   where is_active and code_suffix in ('ER', 'PR') and series_code <> 'E1'
+                   order by official_code
+              """)).scalars().all()
+              print(f"1弾以外のER・PR（フリマの相場は追っていない）: {', '.join(promo)}")
+          PY
