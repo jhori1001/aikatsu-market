@@ -114,7 +114,6 @@ def exclusion_reason(
     for n in sorted({card_name, *other_names}, key=len, reverse=True):
         if n:
             plain = plain.replace(n, " ")
-    plain = plain.replace("サンセット", " ")
     # 全角の数字（「２枚」）も拾えるようにそろえる
     plain = unicodedata.normalize("NFKC", plain)
     if any(k in plain for k in BULK_KEYWORDS):
