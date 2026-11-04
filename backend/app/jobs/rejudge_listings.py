@@ -59,6 +59,7 @@ def run(*, dry_run: bool) -> dict:
         }
 
         changes = []
+        touched: set[int] = set()
         for l in listings:
             card = cards.get(l.card_pk)
             if card is None:
@@ -91,6 +92,14 @@ def run(*, dry_run: bool) -> dict:
             changes.append(
                 {"id": l.id, "card_pk": tgt.id, "is_adopted": adopted, "exclusion_reason": reason}
             )
+            # 日次の平均を計算し直すのは、採用の出入りがあったカードだけ。保存している
+            # 出品の値段は最新の値段に上書きされているので、関係ないカードの過去の日まで
+            # 計算し直すと、過去の平均が今の値段で少しずつずれてしまう
+            if adopted:
+                if not l.is_adopted or tgt.id != card.id:
+                    touched.add(tgt.id)
+            if l.is_adopted and (not adopted or tgt.id != card.id):
+                touched.add(card.id)
 
         # パラレル版で採用する出品の確かめ用（カードごとの件数・値段の幅と、怪しい書き方）
         suspicious_re = re.compile(r"ではな|じゃな|なし|無し|以外|通常|ノーマル|ない")
@@ -157,6 +166,8 @@ def run(*, dry_run: bool) -> dict:
                 )
         price_changes = []
         for row in daily:
+            if row.card_pk not in touched:
+                continue
             prices = [p for first, last, p in by_card.get(row.card_pk, []) if first <= row.date <= last]
             average = None
             if len(prices) >= MIN_SAMPLES_FOR_AVERAGE:
