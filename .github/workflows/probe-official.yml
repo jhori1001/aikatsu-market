@@ -1,0 +1,36 @@
+name: 公式カードリストの下見（パラレル）
+
+# 公式(dcd.aikatsu.com)のカードリストでパラレル版がどう載っているか
+# 確かめる手動ワークフロー（app/jobs/probe_official.py）。
+# 読み取りだけ。DBにはつながない・書かない。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      TZ: Asia/Tokyo
+      PYTHONIOENCODING: utf-8
+      CRAWLER_USER_AGENT: ${{ secrets.CRAWLER_UA }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: 下見（読み取りだけ）
+        run: python -m app.jobs.probe_official
