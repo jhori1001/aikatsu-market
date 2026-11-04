@@ -102,7 +102,7 @@ jobs:
                   select c.official_code, c.name, d.average_asking_price as avg, d.asking_count as n
                     from cards c
                     left join daily_prices d on d.card_pk = c.id and d.date = :d
-                   where c.is_active and c.code_suffix in ('ER', 'PR') and c.series_code = 'E1'
+                   where c.is_active and c.code_suffix in ('ER', 'PR')
                    order by c.official_code
               """), {"d": latest}).all()
               missing = [r for r in rows if r.avg is None]
@@ -110,10 +110,4 @@ jobs:
               for r in rows:
                   mark = "  ←相場なし" if r.avg is None else ""
                   print(f"  {r.official_code:<14} {r.name or '':<24} {r.avg if r.avg is not None else '-':>7} ({r.n if r.n is not None else '行なし'}件){mark}")
-              promo = cx.execute(text("""
-                  select official_code from cards
-                   where is_active and code_suffix in ('ER', 'PR') and series_code <> 'E1'
-                   order by official_code
-              """)).scalars().all()
-              print(f"1弾以外のER・PR（フリマの相場は追っていない）: {', '.join(promo)}")
           PY
