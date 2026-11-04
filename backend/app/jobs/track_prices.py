@@ -24,6 +24,7 @@ import argparse
 import datetime as dt
 import logging
 import re
+import unicodedata
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -44,7 +45,7 @@ TARGET_SUFFIXES = ("ER", "PR")
 MIN_SAMPLES_FOR_AVERAGE = 3
 
 # 明らかにこのカード1枚の値段ではないと分かる出品を弾く
-BULK_KEYWORDS = ("まとめ", "セット", "コンプリート", "福袋", "大量", "全種", "ばら売り不可")
+BULK_KEYWORDS = ("まとめ", "セット", "コンプ", "福袋", "大量", "全種", "ばら売り不可")
 
 
 # パラレル版（同じ絵柄の特別仕様）。通常版の数倍の値段が付くので、混ぜると
@@ -107,9 +108,18 @@ def exclusion_reason(
     決められない出品は、どちらかに入れるのではなく入れない（カドソバと同じ考え方）。
     """
     title = title or ""
-    if any(k in title for k in BULK_KEYWORDS):
+    # まとめ売りの語は、カード名を除いたところで探す（「サンセットスターウェイ」の
+    # 「セット」をまとめ売りと取り違えて、E1-79〜82 が1件も採用されていなかった）
+    plain = title
+    for n in sorted({card_name, *other_names}, key=len, reverse=True):
+        if n:
+            plain = plain.replace(n, " ")
+    plain = plain.replace("サンセット", " ")
+    # 全角の数字（「２枚」）も拾えるようにそろえる
+    plain = unicodedata.normalize("NFKC", plain)
+    if any(k in plain for k in BULK_KEYWORDS):
         return "bulk"
-    if any(k in title for k in MULTI_KEYWORDS) or MULTI_COUNT_RE.search(title):
+    if any(k in plain for k in MULTI_KEYWORDS) or MULTI_COUNT_RE.search(plain):
         return "bulk"
     if card_name and card_name not in title:
         # カード名がそのままタイトルに無い出品は、別カードやアクセ単体などの
