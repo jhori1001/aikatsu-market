@@ -122,6 +122,8 @@ export const Narration: React.FC<{ lines: Line[]; bottom?: number }> = ({ lines,
   const cur = idx >= 0 ? lines[idx] : null;
   const local = cur ? frame - cur.at * fps : 0;
   const op = interpolate(local, [0, 6], [0, 1], { extrapolateRight: "clamp" });
+  // サイトの画面を大きく映している場面は、画面の下側（グラフ）を隠さないよう字幕を上に出す
+  const top = cur?.top ?? false;
   return (
     <>
       {narration.available
@@ -132,7 +134,7 @@ export const Narration: React.FC<{ lines: Line[]; bottom?: number }> = ({ lines,
           ))
         : null}
       {cur ? (
-        <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", paddingBottom: bottom }}>
+        <AbsoluteFill style={{ justifyContent: top ? "flex-start" : "flex-end", alignItems: "center", paddingBottom: top ? 0 : bottom, paddingTop: top ? 150 : 0 }}>
           <div
             style={{
               opacity: op,
