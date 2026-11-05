@@ -72,3 +72,22 @@ jobs:
           done
           echo "=== サーバーのエラー"
           grep -i "error" /tmp/next.log | head -20 || true
+
+      # 作り直しの合図（/api/revalidate）が通るか。鍵は DATABASE_URL のパスワードから作る
+      # （backend/app/jobs/revalidate_site.py と frontend/src/app/api/revalidate/route.ts）。
+      # 合図のあとも各ページが開けるかを見る。鍵が違うときは 403 になることも確かめる
+      - name: 作り直しの合図を試す
+        working-directory: backend
+        env:
+          SITE_URL: http://127.0.0.1:3000
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3000/api/revalidate -H 'x-revalidate-key: wrong')
+          echo "鍵が違うとき: HTTP $code（403 なら正しい）"
+          python3 -m app.jobs.revalidate_site --no-warm
+          for path in / /cards /mylist /cards/E1-04_PR /cards/E1-01_PR_p1 /cards/NO-SUCH_CARD; do
+            for i in 1 2; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' -D /tmp/h.txt "http://127.0.0.1:3000$path")
+              cache=$(grep -i '^x-nextjs-cache' /tmp/h.txt | tr -d '\r' || true)
+              echo "合図のあと $path ($i回目): HTTP $code $cache"
+            done
+          done

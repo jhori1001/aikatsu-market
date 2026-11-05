@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useUrlParams } from "@/lib/useUrlParams";
 import { RARITY_SHORT_LABEL } from "@/lib/rarity";
 import { SortSheet, type SortOption } from "@/components/SortSheet";
 
@@ -31,8 +32,12 @@ export function CardFilters({
   idolOptions: string[];
 }) {
   const router = useRouter();
-  const params = useSearchParams();
-  const [q, setQ] = useState(params.get("q") ?? "");
+  // 作り置きのページ（F2）なので、組み立て直後は条件なしで描き、そのあと URL に合わせる
+  // （最初から URL を読むと作り置きのHTMLと食い違い、React #418 が出る）
+  const params = useUrlParams();
+  const [q, setQ] = useState("");
+  const urlQ = params.get("q") ?? "";
+  useEffect(() => setQ(urlQ), [urlQ]);
 
   function apply(next: Record<string, string>) {
     const sp = new URLSearchParams(params.toString());

@@ -53,3 +53,13 @@ jobs:
             ARGS="--dry-run"
           fi
           python -m app.jobs.fetch_shop_prices $ARGS
+
+      # サイトの作り置きのページを作り直させる（カドソバの F2 と同じ、2026-11-05）。
+      # 公開ページは毎日の更新のあとに1回だけ作り、あとは作り置きを出す形なので、
+      # DBの中身を変えたらここで作り直しの合図を送り、全ページを1回ずつ開く。
+      # 数えるだけ（dry_run）や、反映しない（apply=false）ときは流さない。
+      # 失敗しても、ページは前の作り置きのまま出続ける（壊れはしない）。
+      - name: サイトのページを作り直す
+        if: ${{ !cancelled() && inputs.dry_run != true && inputs.dry_run != 'true' && inputs.apply != false && inputs.apply != 'false' }}
+        continue-on-error: true
+        run: python -m app.jobs.revalidate_site

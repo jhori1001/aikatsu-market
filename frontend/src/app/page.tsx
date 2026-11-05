@@ -1,17 +1,19 @@
 import Link from "next/link";
-import { getCards, getHomeStats, getIdolList, getRareCards, type Card } from "@/lib/cards";
+import { getAllCards, getHomeStats, getIdolList, getRareCards, type Card } from "@/lib/cards";
 import { SITE } from "@/lib/site";
 import { getTrackedData, type TrackedCardData } from "@/lib/realPrice";
 import { getLatestShopPrices, getShopMiniHistories, type ShopPrice } from "@/lib/shopPrice";
 import { yen } from "@/lib/format";
 import { RARITY_SHORT_LABEL } from "@/lib/rarity";
 import { CardArt } from "@/components/CardThumb";
-import { ErrorBox } from "@/components/ErrorBox";
 import { BigTile } from "@/components/BigTile";
 import { RankTile } from "@/components/RankTile";
 import { Carousel } from "@/components/Carousel";
 
-export const dynamic = "force-dynamic";
+// 毎日の更新のあとに1回だけ作り、あとは作り置きを出す（カドソバの F2 と同じ、2026-11-05）。
+// 作り直しは /api/revalidate が行う。見に来た人やロボットが来てもDB（Neon）は起きない。
+export const dynamic = "force-static";
+export const revalidate = false;
 
 function num(n: number): string {
   return n.toLocaleString("ja-JP");
@@ -39,24 +41,14 @@ function MoreTile({ href }: { href: string }) {
 }
 
 export default async function HomePage() {
-  let summary;
-  let rareCards;
-  let idols;
-  let allCards: Card[];
-  try {
-    const [s, rare, idolList, list] = await Promise.all([
-      getHomeStats(),
-      getRareCards(14),
-      getIdolList(),
-      getCards({ per_page: 200 }),
-    ]);
-    summary = s;
-    rareCards = rare;
-    idols = idolList;
-    allCards = list.items;
-  } catch (error) {
-    return <ErrorBox error={error instanceof Error ? error.message : String(error)} />;
-  }
+  // DBが落ちていれば例外のまま。エラー表示を作り置きすると次の更新まで丸1日出続けるので、
+  // 作り直しを失敗させて前の作り置きを残す（カドソバの orThrow と同じ考え方）
+  const [summary, rareCards, idols, allCards]: [
+    Awaited<ReturnType<typeof getHomeStats>>,
+    Card[],
+    Awaited<ReturnType<typeof getIdolList>>,
+    Card[],
+  ] = await Promise.all([getHomeStats(), getRareCards(14), getIdolList(), getAllCards()]);
 
   // 実相場を追跡しているのはER・PR(26枚)だけ
   const tracked = allCards.filter((c) => c.code_suffix === "ER" || c.code_suffix === "PR");

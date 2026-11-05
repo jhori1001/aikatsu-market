@@ -1,5 +1,6 @@
 import { rarityClass } from "@/lib/rarity";
-import { suffixLabel, type Card } from "@/lib/cards";
+import type { Card } from "@/lib/cards";
+import { suffixLabel } from "@/lib/cardFormat";
 
 type ThumbCard = Pick<
   Card,

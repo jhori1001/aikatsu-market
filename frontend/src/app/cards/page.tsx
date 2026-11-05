@@ -1,205 +1,69 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
-import { getCards, getIdolList, getRarityList, getSeriesList, type Card } from "@/lib/cards";
+import { getAllCards, getIdolList, getRarityList, getSeriesList } from "@/lib/cards";
 import { SITE } from "@/lib/site";
 import { getLatestPrices, getTrackedData } from "@/lib/realPrice";
-import { getLatestShopPrices, type ShopPrice } from "@/lib/shopPrice";
-import { yen } from "@/lib/format";
-import { CardArt } from "@/components/CardThumb";
+import { getLatestShopPrices } from "@/lib/shopPrice";
 import { CardFilters } from "@/components/CardFilters";
-import { ErrorBox } from "@/components/ErrorBox";
+import {
+  CardListFromUrl,
+  CardListHead,
+  CardListHeadFromUrl,
+  CardListView,
+  type ListRow,
+} from "@/components/CardListView";
 
-export const dynamic = "force-dynamic";
-
-const PER_PAGE = 48;
+// 毎日の更新のあとに1回だけ作り、あとは作り置きを出す（カドソバの F2 と同じ、2026-11-05）。
+// 作り直しは /api/revalidate が行う。見に来た人やロボットが来てもDBは起きない。
+// 絞り込み・並び替え・ページ送り（?series= ?rarity= ?idol= ?q= ?sort= ?page= ?parallel=）は
+// ブラウザ側（CardListView）で行う。
+export const dynamic = "force-static";
+export const revalidate = false;
 
 export const metadata: Metadata = {
   title: `カード一覧・相場｜${SITE.name}`,
   description: `『${SITE.game}』のカードの相場を一覧で。シリーズ・レアリティ・アイドルで絞り込めます。`,
+  // 絞り込みや並び替えを付けたURLも同じ一覧なので、本物はここだと伝える
   alternates: { canonical: "/cards" },
 };
 
-type SearchParams = Record<string, string | string[] | undefined>;
-
-function first(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) return value[0] ?? "";
-  return value ?? "";
-}
-
-function cardHref(card: Card) {
-  return `/cards/${encodeURIComponent(card.official_code)}`;
-}
-
-function CardTile({
-  card,
-  price,
-  shop,
-}: {
-  card: Card;
-  price: number | null;
-  shop: ShopPrice | null;
-}) {
-  return (
-    <Link href={cardHref(card)} className="card-tile">
-      <CardArt card={card} />
-      <div className="card-meta">
-        <div className="card-name">{card.name ?? "（名称未入力）"}</div>
-        <div className="card-sub">{card.idol_name ?? card.official_code}</div>
-        {price !== null ? (
-          <div className="card-price">
-            <span className="card-price-label">フリマ</span>
-            {yen(price)}
-          </div>
-        ) : shop ? (
-          // フリマの相場が無いカードだけ。相場ではなく店の定価なので、控えめに店名を添える
-          // （カドソバと同じ）
-          <div className="card-price shop">
-            <span className="card-price-label">{shop.shop}</span>
-            {yen(shop.price)}
-          </div>
-        ) : (
-          <div className="card-price none">データ無</div>
-        )}
-      </div>
-    </Link>
+export default async function CardsPage() {
+  // DBが落ちていれば例外のまま（エラー表示を作り置きしない。前の作り置きが出続ける）
+  const [cards, seriesOptions, rarityOptions, idolList, prices, shops] = await Promise.all([
+    getAllCards(),
+    getSeriesList(),
+    getRarityList(),
+    getIdolList(),
+    getLatestPrices(),
+    getLatestShopPrices(),
+  ]);
+  // 値上がり・値下がり順用の7日間の変化率。フリマの相場があるカード全部ぶんを渡しておく
+  const tracked = await getTrackedData(
+    cards.filter((c) => (prices.get(c.id) ?? null) !== null).map((c) => c.id),
   );
-}
-
-const SORT_LABEL: Record<string, string> = {
-  code: "番号順",
-  price_desc: "参考価格が高い順",
-  price_asc: "参考価格が安い順",
-  change_desc: "値上がり順（7日間）",
-  change_asc: "値下がり順（7日間）",
-};
-
-export default async function CardsPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const sp = await searchParams;
-  const page = Math.max(1, Number(first(sp.page)) || 1);
-  const series = first(sp.series) || null;
-  const rarity = first(sp.rarity) || null;
-  const idol = first(sp.idol) || null;
-  // ホームの「きらめくレアカード」の「すべて見る」から来る（パラレル版だけ）
-  const parallel = first(sp.parallel) === "1";
-  const q = first(sp.q) || null;
-  const sort = SORT_LABEL[first(sp.sort)] ? first(sp.sort) : "code";
-
-  let seriesOptions: string[] = [];
-  let rarityOptions: string[] = [];
-  let idolOptions: string[] = [];
-  let matched: { card: Card; price: number | null; shop: ShopPrice | null }[];
-  try {
-    const [list, seriesList, rarityList, idolList, prices, shops] = await Promise.all([
-      getCards({ q, series, rarity, idol, parallel, per_page: 200 }),
-      getSeriesList(),
-      getRarityList(),
-      getIdolList(),
-      getLatestPrices(),
-      getLatestShopPrices(),
-    ]);
-    matched = list.items.map((card) => ({
-      card,
-      price: prices.get(card.id) ?? null,
-      shop: shops.get(card.id)?.normal ?? null,
-    }));
-    seriesOptions = seriesList;
-    rarityOptions = rarityList;
-    idolOptions = idolList.map((i) => i.idol_name);
-  } catch (error) {
-    return (
-      <>
-        <h1 className="page-title">カード一覧</h1>
-        <ErrorBox error={error instanceof Error ? error.message : String(error)} />
-      </>
-    );
-  }
-
-  // 値上がり・値下がり順（ホームの「値上がり」「値下がり」の続き）。
-  // 7日間の変化率で並べ、変化が出せないカードは最後に置く
-  if (sort === "change_desc" || sort === "change_asc") {
-    let ratios = new Map<number, number | null>();
-    try {
-      const tracked = await getTrackedData(matched.filter((m) => m.price !== null).map((m) => m.card.id));
-      ratios = new Map([...tracked].map(([id, d]) => [id, d.summary.change7.ratio]));
-    } catch (error) {
-      return <ErrorBox error={error instanceof Error ? error.message : String(error)} />;
-    }
-    const dir = sort === "change_desc" ? -1 : 1;
-    matched.sort((a, b) => {
-      const ra = ratios.get(a.card.id) ?? null;
-      const rb = ratios.get(b.card.id) ?? null;
-      if (ra === null) return rb === null ? 0 : 1;
-      if (rb === null) return -1;
-      return dir * (ra - rb);
-    });
-  }
-
-  // 並び順は画面に出す金額（フリマの相場、無ければショップ参考価格）で決める。
-  // どちらも無いカードは並び順に関わらず最後に置く
-  const shownPrice = (m: (typeof matched)[number]) => m.price ?? m.shop?.price ?? null;
-  if (sort === "price_desc") {
-    matched.sort((a, b) => (shownPrice(b) ?? -1) - (shownPrice(a) ?? -1));
-  } else if (sort === "price_asc") {
-    matched.sort((a, b) => {
-      const pa = shownPrice(a);
-      const pb = shownPrice(b);
-      if (pa === null) return 1;
-      if (pb === null) return -1;
-      return pa - pb;
-    });
-  }
-
-  const total = matched.length;
-  const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
-  const items = matched.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
-  function pageHref(target: number) {
-    const next = new URLSearchParams();
-    if (q) next.set("q", q);
-    if (series) next.set("series", series);
-    if (rarity) next.set("rarity", rarity);
-    if (idol) next.set("idol", idol);
-    if (parallel) next.set("parallel", "1");
-    if (sort !== "code") next.set("sort", sort);
-    next.set("page", String(target));
-    return `/cards?${next.toString()}`;
-  }
+  const rows: ListRow[] = cards.map((card) => ({
+    card,
+    price: prices.get(card.id) ?? null,
+    shop: shops.get(card.id)?.normal ?? null,
+    change7: tracked.get(card.id)?.summary.change7.ratio ?? null,
+  }));
+  const idolOptions = idolList.map((i) => i.idol_name);
 
   return (
     <>
-      <h1 className="page-title">{parallel ? "パラレル版のカード" : "カード一覧"}</h1>
+      <Suspense fallback={<CardListHead rows={rows} />}>
+        <CardListHeadFromUrl rows={rows} />
+      </Suspense>
+
       <Suspense fallback={<div className="toolbar" />}>
         <CardFilters seriesOptions={seriesOptions} rarityOptions={rarityOptions} idolOptions={idolOptions} />
       </Suspense>
 
-      {items.length === 0 ? (
-        <div className="empty">
-          条件に合うカードがありません。
-          <br />
-          「すべて」を押すと絞り込みを解除できます。
-        </div>
-      ) : (
-        <div className="card-grid">
-          {items.map(({ card, price, shop }) => (
-            <CardTile key={card.id} card={card} price={price} shop={shop} />
-          ))}
-        </div>
-      )}
-
-      {lastPage > 1 ? (
-        <div className="pager">
-          {page > 1 ? <Link href={pageHref(page - 1)}>前へ</Link> : null}
-          <span>
-            {page} / {lastPage}
-          </span>
-          {page < lastPage ? <Link href={pageHref(page + 1)}>次へ</Link> : null}
-        </div>
-      ) : null}
+      {/* 作り置きのHTMLには条件なしの1ページ目を入れておく（検索エンジン向けにも中身がある）。
+          ブラウザで開くと URL の条件に合わせて並び直す */}
+      <Suspense fallback={<CardListView rows={rows} />}>
+        <CardListFromUrl rows={rows} />
+      </Suspense>
     </>
   );
 }

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { dayLabel, num, yen } from "@/lib/format";
 import { RARITY_SHORT_LABEL, rarityClass } from "@/lib/rarity";
-import { displayCode, type Card } from "@/lib/cards";
+import type { Card } from "@/lib/cards";
+import { displayCode } from "@/lib/cardFormat";
 import type { TrackedCardData } from "@/lib/realPrice";
 import type { ShopPrice, ShopPricePoint } from "@/lib/shopPrice";
 import { CardArt } from "@/components/CardThumb";

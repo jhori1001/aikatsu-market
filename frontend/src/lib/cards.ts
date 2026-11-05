@@ -21,19 +21,7 @@ export type Card = {
   img_ver: string | null;
 };
 
-/**
- * 画面に出すカード番号。パラレル版は official_code が "E1-01_PR_p1" なので、
- * 末尾の "_p1" を外して通常版と同じ番号で見せる（パラレルは別の札で示す）。
- */
-export function displayCode(card: Pick<Card, "official_code">): string {
-  return card.official_code.replace(/_p\d+$/, "");
-}
-
-/** レアリティの記号。パラレル版はショップの表記に合わせて「★」を付ける（PR★・ER★） */
-export function suffixLabel(card: Pick<Card, "code_suffix" | "is_parallel">): string | null {
-  if (!card.code_suffix) return null;
-  return card.is_parallel ? `${card.code_suffix}★` : card.code_suffix;
-}
+export { displayCode, suffixLabel } from "@/lib/cardFormat";
 
 // カード画像の向き。バトスラと違い card_type のような種別が無いので、
 // 実際に保存した表面(large)画像の縦横を見て判定する（横 > 縦 なら横向き）。
@@ -66,7 +54,7 @@ export async function getCards(
   params: CardListParams = {},
 ): Promise<{ items: Card[]; total: number }> {
   const page = Math.max(1, params.page ?? 1);
-  const perPage = Math.min(200, Math.max(1, params.per_page ?? 60));
+  const perPage = Math.min(5000, Math.max(1, params.per_page ?? 60));
 
   const where: string[] = ["c.is_active is true"];
   const values: unknown[] = [];
@@ -158,6 +146,22 @@ export async function getCatalogSummary(): Promise<{
   );
   const r = rows[0];
   return { total: r?.total ?? 0, seriesCount: r?.series_count ?? 0, idolCount: r?.idol_count ?? 0 };
+}
+
+/**
+ * 全カード（作り置きのページ用。一覧・マイリスト・ホームの計算に使う）。
+ * 以前は200枚で打ち切っていた（2026-11-05、F2 でカドソバの fetchAllCards に合わせた）。
+ */
+export async function getAllCards(): Promise<Card[]> {
+  return (await getCards({ per_page: 5000 })).items;
+}
+
+/** 作り直すページの一覧用。図鑑に載っているカードの番号すべて */
+export async function getAllCardCodes(): Promise<string[]> {
+  const rows = await query<{ official_code: string }>(
+    `select official_code from cards where is_active is true order by official_code`,
+  );
+  return rows.map((r) => r.official_code);
 }
 
 /** ホームの「きらめくレアカード」用。パラレル版だけ（2026-11-05 ユーザー指示「パラレル限定に絞って」） */

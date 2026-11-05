@@ -16,7 +16,17 @@ import { ShopRef } from "@/components/ShopRef";
 import { ShopPriceSection } from "@/components/ShopPriceSection";
 import { ProtectionGoods } from "@/components/ProtectionGoods";
 
-export const dynamic = "force-dynamic";
+// 毎日の更新のあとに1回だけ作り、あとは作り置きを出す（カドソバの F2 と同じ、2026-11-05）。
+// ビルドのときにはDBを読まない（generateStaticParams は空）。最初に開かれたときに作って保存し、
+// 作り直しは /api/revalidate が行う。DBが落ちていれば例外のまま（前の作り置きを残す）。
+// 無い番号は notFound()（404）。
+export const dynamic = "force-static";
+export const revalidate = false;
+export const dynamicParams = true;
+
+export async function generateStaticParams(): Promise<{ id: string }[]> {
+  return [];
+}
 
 // フリマの相場を追跡しているのはER・PR(26枚)だけ。
 // それ以外（R・N）と、フリマの相場が出せないER・PRは、ショップ参考価格を出す。
@@ -31,7 +41,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const card = await getCard(decodeURIComponent(id)).catch(() => null);
+  const card = await getCard(decodeURIComponent(id));
   const name = (card?.name ?? card?.official_code ?? "カード") + (card?.is_parallel ? "（パラレル）" : "");
   const bits = [card?.idol_name, card?.rarity].filter(Boolean);
   return {
