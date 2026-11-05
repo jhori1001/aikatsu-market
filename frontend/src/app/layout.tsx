@@ -86,7 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 置く（2026-11-05、ユーザー指示）。相手のサイトの道なので next/link ではなく <a> */}
             <a className="sister-btn" href="https://kadosoba.com/" aria-label="バトスラ（日輪）の相場はこちら">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={asset("/sister/nichirin-banner-800.webp")} width={800} height={200} alt="バトスラ（日輪）の相場はこちら" decoding="async" />
+              <img src={asset("/sister/nichirin-banner-800.webp?v=2")} width={800} height={200} alt="バトスラ（日輪）の相場はこちら" decoding="async" />
             </a>
 
             <HeaderSearch />
