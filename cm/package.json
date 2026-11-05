@@ -1,0 +1,20 @@
+{
+  "name": "aikatsu-cm",
+  "private": true,
+  "description": "カドソバ（アイカツ）の15秒CM。Remotion で作る",
+  "scripts": {
+    "studio": "remotion studio",
+    "render:a": "remotion render src/index.ts CmA out/cm-a.mp4",
+    "render:b": "remotion render src/index.ts CmB out/cm-b.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.380",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.380"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.6.3"
+  }
+}
