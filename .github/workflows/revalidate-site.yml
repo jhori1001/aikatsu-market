@@ -53,3 +53,19 @@ jobs:
               curl -s -o /dev/null -D - "https://kadosoba.com/aikatsu$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
             done
           done
+
+      # 公開の状態（2026-11-05 公開）。robots.txt（日輪が出している）にアイカツのサイトマップがあるか、
+      # サイトマップの件数、ページに noindex が残っていないか、姉妹サイトのリンクがあるか
+      - name: 公開の確認
+        run: |
+          echo "=== kadosoba.com/robots.txt"
+          curl -s https://kadosoba.com/robots.txt
+          echo
+          echo "=== kadosoba.com/aikatsu/sitemap.xml の件数: $(curl -s https://kadosoba.com/aikatsu/sitemap.xml | grep -o '<loc>' | wc -l)"
+          for u in https://kadosoba.com/aikatsu https://kadosoba.com/aikatsu/cards/E1-04_PR https://kadosoba.com/aikatsu/mylist https://kadosoba.com/; do
+            html=$(curl -s "$u")
+            echo "=== $u"
+            echo "   noindex: $(echo "$html" | grep -o '<meta name="robots" content="[^"]*"' | head -1)"
+            echo "   canonical: $(echo "$html" | grep -o '<link rel="canonical" href="[^"]*"' | head -1)"
+            echo "   姉妹サイト: $(echo "$html" | grep -o 'footer-sister.\{0,200\}' | grep -o 'href="[^"]*"' | head -1)"
+          done
