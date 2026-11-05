@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllCards, getHomeStats, getIdolList, getRareCards, type Card } from "@/lib/cards";
 import { SITE, asset } from "@/lib/site";
@@ -12,6 +13,9 @@ import { Carousel } from "@/components/Carousel";
 
 // 毎日の更新のあとに1回だけ作り、あとは作り置きを出す（カドソバの F2 と同じ、2026-11-05）。
 // 作り直しは /api/revalidate が行う。見に来た人やロボットが来てもDB（Neon）は起きない。
+// 本物のアドレスは kadosoba.com/aikatsu（末尾の / なし。"/" と書くと /aikatsu/ になり転送が挟まる）
+export const metadata: Metadata = { alternates: { canonical: SITE.url } };
+
 export const dynamic = "force-static";
 export const revalidate = false;
 

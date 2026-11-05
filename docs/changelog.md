@@ -17,12 +17,18 @@
 
 何を:
 - `SITE.isPublic` を true に（全ページの noindex が外れる。マイリストは noindex のまま）。
+- ホームにも canonical（https://kadosoba.com/aikatsu）を付けた（ほかのページは付いていた）。
 - サイトマップ `app/sitemap.ts`（kadosoba.com/aikatsu/sitemap.xml。固定ページ＋カード全部。作り置き、
   作り直しのジョブで一緒に作り直す）。kadosoba.com/robots.txt（日輪が出している）から案内し、
   `/aikatsu/mylist` は巡回しないようにした（日輪の robots.ts を変更。日輪の 04_changelog.md に記録）。
 - スマホ幅（560px 未満）では、ヘッダーの検索を2行目に全幅で置く。ロゴ・ナビ・検索が1行に詰まっていた。
 
 なぜ: ユーザー指示「スマホサイズだとタイトルがかつかつだから余裕をつくってくれ」「公開設定にして」。
+
+確かめたこと（本番、revalidate-site の「公開の確認」）: kadosoba.com/robots.txt に
+`Sitemap: https://kadosoba.com/aikatsu/sitemap.xml` と `Disallow: /aikatsu/mylist`。サイトマップは 135件
+（固定5＋カード130）。/aikatsu・/aikatsu/cards/E1-04_PR に noindex なし、/aikatsu/mylist は noindex。
+姉妹サイトのリンクは kadosoba.com（→ /aikatsu）と kadosoba.com/aikatsu（→ kadosoba.com）の両方にある。
 
 ### フッターに姉妹サイト（日輪）へのリンクを置いた
 
