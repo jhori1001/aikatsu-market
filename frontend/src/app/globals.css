@@ -2417,37 +2417,32 @@ th.num {
    （2026-11-05、ユーザー指示「マイリストの横。小さくていい、ボタンみたいな感じのサイズで」）。
    スマホでは1行目の右端、PCでは検索の左 */
 .sister-btn {
-  /* 右寄せで、空いている幅いっぱいまで大きくする（2026-11-05、ユーザー指示
-     「間がまだあるから、結構敷き詰めちゃってもいい」）。日輪の画像は 4:1。切らずにそのまま出す */
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  justify-content: flex-end;
-  margin-left: auto;
-}
-
-.sister-btn img {
+  flex: 0 0 auto;
   display: block;
-  width: 100%;
-  height: auto;
-  max-width: max-content;
-  max-height: 40px;
-  object-fit: contain;
+  /* 右寄せ（PCは検索のすぐ左、スマホは1行目の右端。2026-11-05、日輪と同じ） */
+  margin-left: auto;
+  height: 32px;
   border-radius: 8px;
+  overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
   transition: transform 0.12s ease;
 }
 
-.sister-btn:active img {
+.sister-btn:active {
   transform: scale(0.96);
 }
 
-/* バナーの右に検索が続くので、検索側の右寄せは外す */
-.sister-btn + .header-search {
-  margin-left: 0;
+.sister-btn img {
+  display: block;
+  height: 100%;
+  /* 両方のサイトで同じ大きさ（4:1）にそろえる。アイカツの画像は 3:1 なので、上下を少し切って収める
+     （2026-11-05、ユーザー指示「アイカツもこのバトスラと同じぐらいのサイズ感にして」） */
+  width: auto;
+  aspect-ratio: 4 / 1;
+  object-fit: cover;
 }
 
-/* スマホでは1行目（ロゴ・カード・マイリスト・バナー）の残りの幅いっぱい */
+/* スマホでは1行目（ロゴ・カード・マイリスト・バナー）に収まるよう、バナーを小さく・間隔を詰める */
 @media (max-width: 559px) {
   .site-header-inner {
     column-gap: 12px;
@@ -2455,10 +2450,23 @@ th.num {
   .site-nav {
     gap: 12px;
   }
-  .sister-btn img {
-    max-height: 52px;
+  .sister-btn {
+    height: 28px;
   }
 }
+
+@media (max-width: 379px) {
+  .sister-btn {
+    height: 24px;
+  }
+}
+
+/* バナーの右に検索が続くので、検索側の右寄せは外す */
+.sister-btn + .header-search {
+  margin-left: 0;
+}
+
+
 
 /* ---------------- 文書ページ ---------------- */
 
