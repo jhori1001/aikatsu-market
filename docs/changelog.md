@@ -19,6 +19,11 @@ kadosoba.com（日輪の Vercel プロジェクト）の `/aikatsu/〜` をこ�
 
 なぜ: ユーザー指示「アイカツも日輪同様にドメインを作成したい。kadosoba/aikatsu って感じにしたい」。
 
+公開のアドレス: 日輪（nichirin-market）の next.config.mjs に rewrites を入れた（日輪の 04_changelog.md に記録）。
+本番の revalidate-site: 作り直しの合図 200、136ページ（固定6＋カード130）を6秒で開き失敗 0。
+そのあと https://kadosoba.com/aikatsu ・/aikatsu/cards・/aikatsu/cards/E1-04_PR はいずれも 200・
+x-vercel-cache: HIT。revalidate-site の前後の確認も kadosoba.com/aikatsu で見るようにした。
+
 確かめたこと（ブランチ claude/aikatsu-basepath、本番DB）: page-check で6ページとも 200、画像はすべて
 /aikatsu 付き（付いていないもの 0）、canonical は https://kadosoba.com/aikatsu/cards など、
 og:image は https://kadosoba.com/aikatsu/hero-banner.webp。作り直しの合図 200（違う鍵 403）、
