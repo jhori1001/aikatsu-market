@@ -4,6 +4,26 @@
 
 ## 2026-11-05
 
+### サイトを kadosoba.com/aikatsu で出す準備（basePath=/aikatsu）
+
+何を: `frontend/next.config.mjs` に `basePath: "/aikatsu"`。全ページが `/aikatsu/〜` になった
+（aikatsu-market.vercel.app/ は 404、aikatsu-market.vercel.app/aikatsu/〜 で開く）。
+kadosoba.com（日輪の Vercel プロジェクト）の `/aikatsu/〜` をここへ回す設定は日輪側に入れる。
+- `<img src>` などに直に書いていた道（カード画像 `/img/cards/〜`、バナー、Amazon のグッズ画像、
+  フルアヘッドのロゴ）は `lib/site.ts` の `asset()` で `/aikatsu` を付ける。利用規約の
+  プライバシーポリシーへのリンクは `<a>` から `<Link>` に（自動で付く）。
+- `SITE.url` を https://kadosoba.com/aikatsu に。canonical・og:image はここから作られる
+  （Next.js は metadataBase の道を足してくれる）。
+- 作り直しのジョブの送り先は https://aikatsu-market.vercel.app/aikatsu（同じ作り置き）。
+  page-check・page-shot・revalidate-site も /aikatsu へ。
+
+なぜ: ユーザー指示「アイカツも日輪同様にドメインを作成したい。kadosoba/aikatsu って感じにしたい」。
+
+確かめたこと（ブランチ claude/aikatsu-basepath、本番DB）: page-check で6ページとも 200、画像はすべて
+/aikatsu 付き（付いていないもの 0）、canonical は https://kadosoba.com/aikatsu/cards など、
+og:image は https://kadosoba.com/aikatsu/hero-banner.webp。作り直しの合図 200（違う鍵 403）、
+合図のあと MISS → HIT、無い番号は 404。page-shot（幅390）: 絞り込み・並び替えが効き、不具合なし。
+
 ### 公開ページを「毎日の更新のあとに1回だけ作る」形にした（カドソバの F2 と同じ）
 
 何を: カドソバ（nichirin-market、master の 85e48d9〜4b490fe、11/04）の F2 と同じ作りを入れた。
