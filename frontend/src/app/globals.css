@@ -62,8 +62,12 @@ a {
 
 /* 上に固定しない。スクロールすると一緒に流れて消える
    （2026-10-30、ユーザー指摘「下にスライドしたときついてきて見にくい」） */
+/* 上に貼り付ける（日輪と同じ）。iPhone の Safari は、上に貼り付いた要素があると上の帯（時計など）を
+   その色でくっきり塗る。貼り付けないと上の帯がぼかしになり、ヘッダーや中身が透けて見えていた
+   （2026-11-05、ユーザー指摘「まだ透けてる」。10/30 に一度、付いてくるのが見にくいと外していた） */
 .site-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 30;
   min-height: var(--header-h);
   background: #ffffff;
@@ -74,23 +78,6 @@ a {
   padding-top: env(safe-area-inset-top);
 }
 
-/* スマホの画面のいちばん上（時計などが出る帯、viewport-fit=cover のため中身が下に潜る）を
-   白でふさぐ。ヘッダーは上に固定しないので、スクロールすると中身がこの帯の裏に透けていた
-   （2026-11-05、ユーザー指摘「上側透けてるから直してくれ」） */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  /* Safari（iPhone）では env(safe-area-inset-top) が 0 のことがあり、そのままだと帯が消えて
-     上の帯がぼかし（中身が透ける）のままだった。最低 1px にして「上に白い固定の要素がある」と
-     Safari に伝え、上の帯を白でくっきり塗らせる（日輪はヘッダーが上に貼り付くので同じ効果がある） */
-  height: max(1px, env(safe-area-inset-top));
-  background: #ffffff;
-  z-index: 100;
-  pointer-events: none;
-}
 
 /* ダークモードでもヘッダーは白のまま（カドソバと同じ）。前は暗い背景になり、
    黒い「カド」の文字が見えなくなっていた（2026-11-05、ユーザー指摘） */
