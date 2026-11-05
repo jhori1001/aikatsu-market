@@ -9,7 +9,7 @@ export function MyListLink() {
 
   return (
     <Link href="/mylist" className="mylist-link">
-      <span aria-hidden="true">♡</span> すきなカード
+      マイリスト
       {ready && count > 0 ? <span className="mylist-count">{count}</span> : null}
     </Link>
   );
