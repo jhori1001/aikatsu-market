@@ -1,0 +1,54 @@
+name: サイトのページを作り直す
+
+# 公開ページは毎日の更新のあとに1回だけ作り、あとは作り置きを出す
+# （カドソバの F2 と同じ、2026-11-05）。DBの中身を変えるワークフローは最後に
+# 自動でこれと同じことをするが、手で作り直したいとき（デプロイ直後など）に使う。
+# 自分のサイトにアクセスし、ページの一覧を作るためにDBのカード一覧を読むだけ（書き込まない）。
+#
+# 作り直しの前後で、作り置きが効いているか（x-vercel-cache）も表示する。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  revalidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: 作り置きの状態（前）
+        run: |
+          for p in / /cards /cards/E1-04_PR; do
+            echo "=== $p"
+            curl -s -o /dev/null -D - "https://aikatsu-market.vercel.app$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
+          done
+
+      - name: 作り直す
+        run: python -m app.jobs.revalidate_site
+
+      - name: 作り置きの状態（後）
+        run: |
+          for p in / /cards /cards/E1-04_PR; do
+            for i in 1 2; do
+              echo "=== $p ($i回目)"
+              curl -s -o /dev/null -D - "https://aikatsu-market.vercel.app$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
+            done
+          done

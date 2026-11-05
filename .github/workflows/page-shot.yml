@@ -1,0 +1,132 @@
+name: 画面の写真を撮る
+
+# 本番と同じDBにつないでサイトを立ち上げ、実際のブラウザで開いて写真を撮る手動ワークフロー
+# （カドソバの page-shot と同じ役目）。page-check はHTMLの文字を数えるだけなので、
+# ブラウザ側で動く部分（F2 で一覧の絞り込み・並び替えをブラウザ側に移した）や、
+# 画面で出る不具合（React #418 など）はここで確かめる。
+# 読むだけで、DBには一切書き込まない。写真は Artifacts（3日）に置く。
+
+on:
+  workflow_dispatch:
+    inputs:
+      paths:
+        description: "撮るページ（カンマ区切り）"
+        required: false
+        default: "/,/cards,/cards?rarity=PR&sort=price_desc,/cards?parallel=1,/cards/E1-04_PR"
+      width:
+        description: "画面の幅（390でスマホ相当）"
+        required: false
+        default: "390"
+
+jobs:
+  shot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TZ: Asia/Tokyo
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: ブラウザを用意する
+        run: npx --yes playwright@1.49.1 install --with-deps chromium
+
+      - name: サーバーを起動
+        run: |
+          npm run start -- --port 3000 > /tmp/next.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/about -o /dev/null 2>/dev/null; then
+              echo "起動しました"; exit 0
+            fi
+            sleep 2
+          done
+          echo "起動できませんでした"; cat /tmp/next.log; exit 1
+
+      - name: 開いて撮る
+        env:
+          PATHS: ${{ inputs.paths }}
+          WIDTH: ${{ inputs.width }}
+        run: |
+          npm i --no-save playwright@1.49.1
+          node - <<'JS'
+          const { chromium } = require("playwright");
+          const fs = require("fs");
+
+          const paths = (process.env.PATHS || "/").split(",").map((s) => s.trim()).filter(Boolean);
+          const width = Number(process.env.WIDTH || 390);
+
+          (async () => {
+            fs.mkdirSync("shots", { recursive: true });
+            const browser = await chromium.launch();
+            const page = await browser.newPage({ viewport: { width, height: 900 } });
+
+            const errors = [];
+            page.on("pageerror", (e) => errors.push(String(e)));
+            page.on("console", (m) => {
+              if (m.type() === "error") errors.push(m.text());
+            });
+
+            for (const [i, path] of paths.entries()) {
+              await page.goto("http://127.0.0.1:3000" + path, { waitUntil: "networkidle" });
+              await page.waitForTimeout(1500);
+              const counts = await page.evaluate(() => {
+                const n = (sel) => document.querySelectorAll(sel).length;
+                const text = (sel) => document.querySelector(sel)?.textContent?.trim() ?? null;
+                const prices = [...document.querySelectorAll(".card-grid .card-price")]
+                  .slice(0, 6)
+                  .map((el) => el.textContent.trim());
+                return {
+                  // URL の条件がブラウザ側で効いているか（F2）
+                  題: text("h1.page-title"),
+                  件数表示: text(".page-sub")?.split("·")[0]?.trim() ?? null,
+                  カード一覧の枚数: n(".card-grid .card-tile"),
+                  先頭の値段: prices,
+                  押されたチップ: [...document.querySelectorAll(".chip.active")].map((c) => c.textContent.trim()),
+                  並び順: text(".sort-btn-value"),
+                  ページ送り: text(".pager span"),
+                  大きいタイル: n(".big-tile"),
+                  数字: [...document.querySelectorAll(".hero-stat-value")].map((e) => e.textContent.trim()),
+                };
+              });
+              console.log("===", path);
+              for (const [k, v] of Object.entries(counts)) console.log("   " + k + ":", JSON.stringify(v));
+              const name = `shots/${String(i + 1).padStart(2, "0")}${path.replace(/[^a-z0-9]+/gi, "_")}.png`;
+              await page.screenshot({ path: name, fullPage: true });
+              console.log("   写真:", name);
+            }
+
+            await browser.close();
+            if (errors.length) {
+              console.log("=== 画面で出た不具合");
+              for (const e of [...new Set(errors)].slice(0, 20)) console.log("   " + e);
+            } else {
+              console.log("=== 画面で出た不具合: なし");
+            }
+          })();
+          JS
+
+      - name: サーバーのエラー
+        if: always()
+        run: grep -i "error" /tmp/next.log | head -20 || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: page-shots
+          path: frontend/shots/
+          retention-days: 3
