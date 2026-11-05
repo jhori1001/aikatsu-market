@@ -173,15 +173,6 @@ export default async function CardsPage({
   return (
     <>
       <h1 className="page-title">{parallel ? "パラレル版のカード" : "カード一覧"}</h1>
-      <p className="page-sub">
-        {total.toLocaleString("ja-JP")}枚 · タップすると大きな画像で見られます
-        <br />
-        <span className="sample-note">
-          ※ 「フリマ」はER・PRカードのみ、Yahoo!フリマの販売中の出品から算出した参考価格です。
-          それ以外はカードショップ（フルアヘッド）の販売価格です。
-        </span>
-      </p>
-
       <Suspense fallback={<div className="toolbar" />}>
         <CardFilters seriesOptions={seriesOptions} rarityOptions={rarityOptions} idolOptions={idolOptions} />
       </Suspense>
