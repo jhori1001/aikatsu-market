@@ -88,6 +88,20 @@ a {
   padding: 8px 0;
 }
 
+/* スマホ幅では、検索を2行目に全幅で置く。1行に詰めると、ロゴ・ナビ・検索がかつかつに
+   なっていた（2026-11-05、ユーザー指摘「スマホサイズだとタイトルがかつかつだから余裕をつくって」） */
+@media (max-width: 559px) {
+  .site-header-inner {
+    column-gap: 20px;
+    row-gap: 8px;
+    padding: 10px 0;
+  }
+  .header-search {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+}
+
 .brand {
   font-family: "Zen Maru Gothic", sans-serif;
   font-weight: 900;

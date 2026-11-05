@@ -1,8 +1,7 @@
 /**
  * サイトの基本情報。固定ページとヘッダーで共通して使う。
  *
- * サイト名・ドメインはまだ決めていない（2026-10-24時点）。決まるまでは
- * isPublic を false にして検索エンジンには出さない。
+ * サイト名は「カドソバ」、アドレスは kadosoba.com/aikatsu（2026-11-05 に公開）。
  */
 
 export const SITE = {
@@ -16,8 +15,11 @@ export const SITE = {
   owner: "カドソバ",
   /** 問い合わせ先。カドソバ（日輪）と同じアドレス。空にすると画面に「準備中」と出す */
   email: "wanc0968@gmail.com",
-  /** ドメイン・公開範囲が未確定のうちは false のまま */
-  isPublic: false,
+  /**
+   * 検索エンジンに載せるかどうか。2026-11-05 ユーザー指示「公開設定にして」で true
+   * （kadosoba.com/aikatsu で公開。false に戻すと全ページが noindex になる）。
+   */
+  isPublic: true,
   /** 公開URL。OGPと canonical に使う（kadosoba.com の中の /aikatsu。next.config の basePath と同じ） */
   url: "https://kadosoba.com/aikatsu",
   /**

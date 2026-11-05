@@ -40,7 +40,7 @@ USER_AGENT = "aikatsu-revalidate (own site; GitHub Actions)"
 WORKERS = 6
 # カード以外の公開ページ
 # ホームは SITE_URL そのもの（basePath の下の "/" は "/aikatsu/" → "/aikatsu" へ転送されるため "" にする）
-FIXED_PATHS = ("", "/cards", "/mylist", "/about", "/terms", "/privacy")
+FIXED_PATHS = ("", "/cards", "/mylist", "/about", "/terms", "/privacy", "/sitemap.xml")
 
 
 def revalidate_key() -> str:
