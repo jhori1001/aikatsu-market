@@ -1,4 +1,4 @@
 node_modules/
 out/
-public/audio/*.wav
+public/audio/bgm-*.wav
 public/fonts/*.ttf
