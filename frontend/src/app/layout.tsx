@@ -84,7 +84,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        <main>{children}</main>
+        <main>
+          {/* 姉妹サイトへの細い帯（ヘッダーとページの間）。カドソバ（日輪）＝ kadosoba.com のトップ。basePath=/aikatsu が付かないよう <a> で直に書く */}
+          <div className="sister-bar">
+            <a href="https://kadosoba.com/">
+              <span className="sister-bar-label">姉妹サイト</span>
+              バトスラ（日輪）の相場
+              <span className="sister-bar-arrow" aria-hidden="true">→</span>
+            </a>
+          </div>
+          {children}
+        </main>
 
         <Footer />
       </body>
