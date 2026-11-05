@@ -16,7 +16,6 @@ export function Footer() {
         {/* 姉妹サイト（カドソバ＝日輪。同じ kadosoba.com のトップ）。このサイトは basePath=/aikatsu
             なので、next/link にすると /aikatsu が付いてしまう。<a> で直に書く */}
         <p className="footer-sister">
-          <span className="footer-sister-label">姉妹サイト</span>
           <a href="https://kadosoba.com/">鬼滅の刃 日輪バトルスラッシュ（バトスラ）の相場</a>
         </p>
 
