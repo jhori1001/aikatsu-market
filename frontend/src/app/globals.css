@@ -2360,6 +2360,39 @@ th.num {
   color: var(--text-faint);
 }
 
+/* 姉妹サイト（カドソバ＝日輪とアイカツ）へのリンク。両方のサイトで同じ見た目にしてある
+   （2026-11-05、ユーザー指示「お互いへのリンクを置く」）。同じ kadosoba.com の中なので、
+   行き来できるようにし、検索エンジンにも見つけてもらいやすくする */
+.footer-sister {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12px;
+}
+
+.footer-sister-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+
+.footer-sister a {
+  font-weight: 800;
+  color: var(--text);
+}
+
+.footer-sister a::after {
+  content: " →";
+  color: var(--text-dim);
+}
+
+
 /* ---------------- 文書ページ ---------------- */
 
 .doc {

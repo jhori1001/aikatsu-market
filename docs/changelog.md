@@ -13,6 +13,16 @@
 
 ## 2026-11-05
 
+### フッターに姉妹サイト（日輪）へのリンクを置いた
+
+何を: フッターに「姉妹サイト　鬼滅の刃 日輪バトルスラッシュ（バトスラ）の相場 →」（https://kadosoba.com/）を足した。
+日輪のフッターにも同じ見た目でアイカツへのリンクを置いた（`.footer-sister`、両方同じCSS。色だけ各サイトの色）。
+basePath=/aikatsu なので next/link ではなく `<a>` で直に書いた。
+
+なぜ: 日輪は kadosoba.com のまま動かさず（Google の評価を保つため）、アイカツは kadosoba.com/aikatsu、
+その代わりにお互いへのリンクを置くことにした（ユーザー「それ欲しいな」）。行き来できるようにし、
+検索エンジンにもアイカツを見つけてもらいやすくする。
+
 ### サイトを kadosoba.com/aikatsu で出す準備（basePath=/aikatsu）
 
 何を: `frontend/next.config.mjs` に `basePath: "/aikatsu"`。全ページが `/aikatsu/〜` になった

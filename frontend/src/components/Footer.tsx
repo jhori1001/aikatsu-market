@@ -13,6 +13,13 @@ export function Footer() {
           ))}
         </nav>
 
+        {/* 姉妹サイト（カドソバ＝日輪。同じ kadosoba.com のトップ）。このサイトは basePath=/aikatsu
+            なので、next/link にすると /aikatsu が付いてしまう。<a> で直に書く */}
+        <p className="footer-sister">
+          <span className="footer-sister-label">姉妹サイト</span>
+          <a href="https://kadosoba.com/">鬼滅の刃 日輪バトルスラッシュ（バトスラ）の相場</a>
+        </p>
+
         <p className="footer-note">
           当サイトは個人が運営する非公式のファンサイトです。「{SITE.game}」の発行元・制作元、
           その他の権利者とは一切関係ありません。
