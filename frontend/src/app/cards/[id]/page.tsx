@@ -14,6 +14,7 @@ import { MiniChange } from "@/components/PriceBadges";
 import { RealSalesTable } from "@/components/RealSalesTable";
 import { ShopRef } from "@/components/ShopRef";
 import { ShopPriceSection } from "@/components/ShopPriceSection";
+import { ProtectionGoods } from "@/components/ProtectionGoods";
 
 export const dynamic = "force-dynamic";
 
@@ -234,6 +235,9 @@ export default async function CardDetailPage({
           </div>
         )}
       </div>
+
+      {/* 相場とグラフを見終わった直後、一番関心が高いタイミングで出す（カドソバと同じ場所） */}
+      <ProtectionGoods />
 
       {tracked ? (
         <>
