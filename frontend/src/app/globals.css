@@ -74,6 +74,21 @@ a {
   padding-top: env(safe-area-inset-top);
 }
 
+/* スマホの画面のいちばん上（時計などが出る帯、viewport-fit=cover のため中身が下に潜る）を
+   白でふさぐ。ヘッダーは上に固定しないので、スクロールすると中身がこの帯の裏に透けていた
+   （2026-11-05、ユーザー指摘「上側透けてるから直してくれ」） */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: #ffffff;
+  z-index: 100;
+  pointer-events: none;
+}
+
 /* ダークモードでもヘッダーは白のまま（カドソバと同じ）。前は暗い背景になり、
    黒い「カド」の文字が見えなくなっていた（2026-11-05、ユーザー指摘） */
 

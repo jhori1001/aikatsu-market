@@ -37,7 +37,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#fff6fa",
+  // ブラウザの上の帯の色。ヘッダー（白）と合わせる。ピンクだとスマホの上側が透けて見えていた
+  // （2026-11-05、ユーザー指摘「上側透けてるから直してくれ」。カドソバも白）
+  themeColor: "#ffffff",
 };
 
 const NAV: { href: string; label: string }[] = [{ href: "/cards", label: "カード" }];
