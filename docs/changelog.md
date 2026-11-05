@@ -4,6 +4,39 @@
 
 ## 2026-11-05
 
+### 公開ページを「毎日の更新のあとに1回だけ作る」形にした（カドソバの F2 と同じ）
+
+何を: カドソバ（nichirin-market、master の 85e48d9〜4b490fe、11/04）の F2 と同じ作りを入れた。
+- ホーム・`/cards`・`/cards/[id]`・`/mylist` を `force-static` + `revalidate=false`（作り置き。Vercel の ISR）。
+  カード詳細は `generateStaticParams` が空・`dynamicParams=true`（ビルドではDBを読まず、最初に開かれたときに作る）。
+  `/about`・`/terms`・`/privacy` はDBを使わないので、もとから作り置き。
+- `/cards` の絞り込み・並び替え・ページ送り（`?series` `?rarity` `?idol` `?q` `?sort` `?page` `?parallel`）は
+  ブラウザ側（`components/CardListView.tsx`）で行う。サーバーは全カードと、値上がり順用の7日の変化率を渡す。
+  組み立て直後は URL を読まない（`lib/useUrlParams.ts`。読むと React #418 が出る）。`CardFilters` も同じ。
+  並び方は以前のサーバー側と同じ。題の下の枚数と注記の文は、別のチャットで消した（6dd3fbf）のに合わせて出さない。
+- DBの失敗はエラー表示（ErrorBox）にせず例外にして、前の作り置きを残す。カードが無いときは `notFound()`。
+- 全カードを取る `getAllCards`（以前は200枚で打ち切っていた）。DBに触らない小さな関数は
+  `lib/cardFormat.ts` に分けた（ブラウザ側の部品からDBの部品を読まないため）。
+- 作り直し: `POST /api/revalidate`（`revalidatePath("/", "layout")`）。鍵は
+  sha256("aikatsu-revalidate:" + DATABASE_URL のパスワード)。アイカツは `unstable_cache` を使っていないので
+  カドソバの `revalidateTag` は要らない。`backend/app/jobs/revalidate_site.py` が合図を送り、
+  全ページ（固定の6ページ＋DBのカード一覧から作った `/cards/<番号>`）を6本ずつ1回開く。
+  SITE_URL は https://aikatsu-market.vercel.app。
+- DBを変える5本（track-prices・fetch-shop-prices・rejudge・crawl・import-card-master）の最後に
+  「サイトのページを作り直す」（dry_run / apply=false のときは流さない。失敗しても前の作り置きが出続ける）。
+  手で作り直す `revalidate-site.yml`、写真を撮る `page-shot.yml` を追加。page-check に「作り直しの合図を試す」。
+- マイリストの題を「すきなカード」から「マイリスト」に（ナビに合わせた）。
+
+なぜ: ユーザー指示「カドソバの F2 をアイカツにも」。見に来た人やロボットが来るたびに Neon が起きて
+料金がかかるのを止めるため。
+
+確かめたこと（ブランチ claude/f2-static-pages、本番DBにつないで）:
+- page-check: 鍵が違うと 403、合図は 200。合図のあと / ・/cards・/mylist・/cards/E1-04_PR・
+  /cards/E1-01_PR_p1 は 1回目 MISS → 2回目 HIT（作り置き）、無い番号 /cards/NO-SUCH_CARD は 404。
+- page-shot（幅390）: /cards?rarity=PR&sort=price_desc → 30枚・PR が押された状態・高い順（16,890円〜）。
+  /cards?parallel=1 → 「パラレル版のカード」12枚。/cards?q=サンセット → 4枚。
+  /cards?sort=change_desc&page=2 → 「値上がり順」「2 / 3」。画面で出た不具合: なし（React #418 なし）。
+
 ### ホームの「きらめくレアカード」をパラレル版だけにした
 
 何を: `getRareCards` を PR・ER（38枚から先頭14枚）からパラレル版（`is_parallel`、12枚）に絞った。
