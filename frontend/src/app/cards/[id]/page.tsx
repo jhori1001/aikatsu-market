@@ -42,11 +42,21 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const card = await getCard(decodeURIComponent(id));
-  const name = (card?.name ?? card?.official_code ?? "カード") + (card?.is_parallel ? "（パラレル）" : "");
-  const bits = [card?.idol_name, card?.rarity].filter(Boolean);
+  if (!card) return { title: `カード｜${SITE.name}` };
+  const name = card.name ?? card.official_code ?? "カード";
+  const bits = [card.idol_name, card.rarity, card.is_parallel ? "パラレル" : null].filter(Boolean);
+  const paren = bits.length ? `（${bits.join(" ")}）` : "";
+  // 日輪と同じ形（2026-11-06）。検索されるのはカード名なので先頭に置き、
+  // 「アイカツ ○○ 相場」のような打ち方にも引っかかるよう「相場・価格推移」とゲーム名を足す。
+  const title = `${name}${paren}の相場・価格推移｜${SITE.game}`;
+  const description = isTracked(card)
+    ? `${SITE.game}「${name}」${paren}の相場と値動き。Yahoo!フリマの出品を毎日記録し、値動きをグラフで見られます。`
+    : `${SITE.game}「${name}」${paren}のショップ参考価格。カード画像と収録情報も見られます。`;
   return {
-    title: `${name}${bits.length ? `（${bits.join(" ")}）` : ""}｜${SITE.name}`,
+    title,
+    description,
     alternates: { canonical: `/cards/${encodeURIComponent(id)}` },
+    openGraph: { title, description, type: "article" },
   };
 }
 
