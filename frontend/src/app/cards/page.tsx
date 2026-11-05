@@ -84,6 +84,8 @@ export default async function CardsPage({
   const series = first(sp.series) || null;
   const rarity = first(sp.rarity) || null;
   const idol = first(sp.idol) || null;
+  // ホームの「きらめくレアカード」の「すべて見る」から来る（パラレル版だけ）
+  const parallel = first(sp.parallel) === "1";
   const q = first(sp.q) || null;
   const sort = SORT_LABEL[first(sp.sort)] ? first(sp.sort) : "code";
 
@@ -93,7 +95,7 @@ export default async function CardsPage({
   let matched: { card: Card; price: number | null; shop: ShopPrice | null }[];
   try {
     const [list, seriesList, rarityList, idolList, prices, shops] = await Promise.all([
-      getCards({ q, series, rarity, idol, per_page: 200 }),
+      getCards({ q, series, rarity, idol, parallel, per_page: 200 }),
       getSeriesList(),
       getRarityList(),
       getIdolList(),
@@ -162,6 +164,7 @@ export default async function CardsPage({
     if (series) next.set("series", series);
     if (rarity) next.set("rarity", rarity);
     if (idol) next.set("idol", idol);
+    if (parallel) next.set("parallel", "1");
     if (sort !== "code") next.set("sort", sort);
     next.set("page", String(target));
     return `/cards?${next.toString()}`;
@@ -169,7 +172,7 @@ export default async function CardsPage({
 
   return (
     <>
-      <h1 className="page-title">カード一覧</h1>
+      <h1 className="page-title">{parallel ? "パラレル版のカード" : "カード一覧"}</h1>
       <p className="page-sub">
         {total.toLocaleString("ja-JP")}枚 · タップすると大きな画像で見られます
         <br />

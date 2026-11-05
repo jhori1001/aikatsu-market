@@ -139,9 +139,9 @@ export default async function HomePage() {
         <section className="rank-section">
           <div className="section-head accent-gold">
             <h2 className="section-head-title">
-              きらめくレアカード <small>プレミアム・アンコールレア</small>
+              きらめくレアカード <small>パラレル版</small>
             </h2>
-            <Link href="/cards?rarity=PR" className="section-more">
+            <Link href="/cards?parallel=1" className="section-more">
               すべて見る
             </Link>
           </div>

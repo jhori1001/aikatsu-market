@@ -56,6 +56,8 @@ export type CardListParams = {
   series?: string | null;
   rarity?: string | null;
   idol?: string | null;
+  /** true ならパラレル版だけ */
+  parallel?: boolean;
   page?: number;
   per_page?: number;
 };
@@ -80,6 +82,7 @@ export async function getCards(
   if (params.series) where.push(`c.series_code = ${bind(params.series)}`);
   if (params.rarity) where.push(`c.code_suffix = ${bind(params.rarity)}`);
   if (params.idol) where.push(`c.idol_name = ${bind(params.idol)}`);
+  if (params.parallel) where.push("c.is_parallel is true");
 
   const whereSql = `where ${where.join(" and ")}`;
 
@@ -157,12 +160,12 @@ export async function getCatalogSummary(): Promise<{
   return { total: r?.total ?? 0, seriesCount: r?.series_count ?? 0, idolCount: r?.idol_count ?? 0 };
 }
 
-/** ホームの「きらめくレアカード」用。PR・ERだけを少数抜き出す */
+/** ホームの「きらめくレアカード」用。パラレル版だけ（2026-11-05 ユーザー指示「パラレル限定に絞って」） */
 export async function getRareCards(limit = 14): Promise<Card[]> {
   const items = await query<Card>(
     `select ${CARD_COLUMNS}
        from cards c
-      where c.is_active is true and c.code_suffix in ('PR', 'ER')
+      where c.is_active is true and c.is_parallel is true
       order by c.series_code, (c.card_number)::int nulls last, c.official_code
       limit $1`,
     [limit],
