@@ -83,7 +83,10 @@ body::before {
   top: 0;
   left: 0;
   right: 0;
-  height: env(safe-area-inset-top);
+  /* Safari（iPhone）では env(safe-area-inset-top) が 0 のことがあり、そのままだと帯が消えて
+     上の帯がぼかし（中身が透ける）のままだった。最低 1px にして「上に白い固定の要素がある」と
+     Safari に伝え、上の帯を白でくっきり塗らせる（日輪はヘッダーが上に貼り付くので同じ効果がある） */
+  height: max(1px, env(safe-area-inset-top));
   background: #ffffff;
   z-index: 100;
   pointer-events: none;
@@ -2426,34 +2429,36 @@ th.num {
 .sister-bar {
   display: flex;
   justify-content: flex-end;
-  margin: -4px 0 10px;
+  margin: -4px 0 12px;
 }
 
+/* 相手のサイトのバナー画像（4:1）。スマホは横いっぱい、PCは右上に 440px で置く
+   （2026-11-05、ユーザー指示「右上のところ空いたからこれ挿入して」） */
 .sister-bar a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
-  padding: 5px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--text);
-  white-space: nowrap;
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  text-overflow: ellipsis;
+  box-shadow: var(--shadow-sm, 0 1px 4px rgba(0, 0, 0, 0.1));
+  transition: transform 0.12s ease;
 }
 
-.sister-bar-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--text-faint);
+.sister-bar a:active {
+  transform: scale(0.98);
 }
 
-.sister-bar-arrow {
-  color: var(--text-dim);
+.sister-bar img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 1;
+  object-fit: cover;
+}
+
+@media (min-width: 560px) {
+  .sister-bar a {
+    width: 440px;
+  }
 }
 
 
