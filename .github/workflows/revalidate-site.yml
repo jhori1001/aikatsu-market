@@ -6,6 +6,7 @@ name: サイトのページを作り直す
 # 自分のサイトにアクセスし、ページの一覧を作るためにDBのカード一覧を読むだけ（書き込まない）。
 #
 # 作り直しの前後で、作り置きが効いているか（x-vercel-cache）も表示する。
+# 見るのは公開のアドレス kadosoba.com/aikatsu（日輪の Vercel がアイカツへ中継している）。
 
 on:
   workflow_dispatch:
@@ -38,7 +39,7 @@ jobs:
         run: |
           for p in "" /cards /cards/E1-04_PR; do
             echo "=== $p"
-            curl -s -o /dev/null -D - "https://aikatsu-market.vercel.app/aikatsu$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
+            curl -s -o /dev/null -D - "https://kadosoba.com/aikatsu$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
           done
 
       - name: 作り直す
@@ -49,6 +50,6 @@ jobs:
           for p in "" /cards /cards/E1-04_PR; do
             for i in 1 2; do
               echo "=== $p ($i回目)"
-              curl -s -o /dev/null -D - "https://aikatsu-market.vercel.app/aikatsu$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
+              curl -s -o /dev/null -D - "https://kadosoba.com/aikatsu$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
             done
           done
