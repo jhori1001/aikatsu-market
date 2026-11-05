@@ -12,8 +12,10 @@ export const SITE = {
   /** バナーの大きな見出し用（「アイカツ！アンコール最新相場」） */
   gameShort: "アイカツ！アンコール",
   officialUrl: "https://dcd.aikatsu.com/encore/",
-  owner: "個人運営",
-  email: "",
+  /** 運営者名。カドソバ（日輪）と同じ */
+  owner: "カドソバ",
+  /** 問い合わせ先。カドソバ（日輪）と同じアドレス。空にすると画面に「準備中」と出す */
+  email: "wanc0968@gmail.com",
   /** ドメイン・公開範囲が未確定のうちは false のまま */
   isPublic: false,
   url: "https://example.com",
@@ -22,11 +24,18 @@ export const SITE = {
    * 2026-11-05 ユーザー指示「日輪と同じ場所配置で置いて」により公開（リンクは日輪と同じ）。
    */
   showProtectionGoods: true,
-  sources: [{ name: "アイカツ！アンコール公式カードリスト", what: "カード画像" }],
+  /** データの取得元。このサイトについて・プライバシーポリシーで参照する */
+  sources: [
+    { name: "アイカツ！アンコール公式カードリスト", what: "カード画像" },
+    { name: "Yahoo!フリマ", what: "販売中の出品価格" },
+    { name: "フルアヘッド アイドル館", what: "ショップの販売価格" },
+  ],
   /** 正式な著作権表記は未確認。公開前に権利者表記を確認して埋める */
   rights: ["非公式のファンサイトです。権利は各権利者に帰属します。"],
 } as const;
 
 export const PAGES = [
   { href: "/about", label: "このサイトについて" },
+  { href: "/terms", label: "利用規約" },
+  { href: "/privacy", label: "プライバシーポリシー" },
 ] as const;
