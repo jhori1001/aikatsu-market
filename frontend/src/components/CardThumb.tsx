@@ -1,6 +1,7 @@
 import { rarityClass } from "@/lib/rarity";
 import type { Card } from "@/lib/cards";
 import { suffixLabel } from "@/lib/cardFormat";
+import { asset } from "@/lib/site";
 
 type ThumbCard = Pick<
   Card,
@@ -19,12 +20,12 @@ function ver(card: ThumbCard): string {
 }
 
 export function thumbUrl(card: ThumbCard): string | null {
-  return card.has_front ? `/img/cards/${encodeURIComponent(card.official_code)}/front-thumb.webp${ver(card)}` : null;
+  return card.has_front ? asset(`/img/cards/${encodeURIComponent(card.official_code)}/front-thumb.webp${ver(card)}`) : null;
 }
 
 export function largeUrl(card: ThumbCard, side: "front" | "back"): string | null {
   const has = side === "front" ? card.has_front : card.has_back;
-  return has ? `/img/cards/${encodeURIComponent(card.official_code)}/${side}-large.webp${ver(card)}` : null;
+  return has ? asset(`/img/cards/${encodeURIComponent(card.official_code)}/${side}-large.webp${ver(card)}`) : null;
 }
 
 /** 一覧のタイル。画像を主役にして、レアリティだけ角に出す。 */

@@ -36,9 +36,9 @@ jobs:
 
       - name: 作り置きの状態（前）
         run: |
-          for p in / /cards /cards/E1-04_PR; do
+          for p in "" /cards /cards/E1-04_PR; do
             echo "=== $p"
-            curl -s -o /dev/null -D - "https://aikatsu-market.vercel.app$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
+            curl -s -o /dev/null -D - "https://aikatsu-market.vercel.app/aikatsu$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
           done
 
       - name: 作り直す
@@ -46,9 +46,9 @@ jobs:
 
       - name: 作り置きの状態（後）
         run: |
-          for p in / /cards /cards/E1-04_PR; do
+          for p in "" /cards /cards/E1-04_PR; do
             for i in 1 2; do
               echo "=== $p ($i回目)"
-              curl -s -o /dev/null -D - "https://aikatsu-market.vercel.app$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
+              curl -s -o /dev/null -D - "https://aikatsu-market.vercel.app/aikatsu$p" | grep -i -E "^HTTP|x-vercel-cache|^age:|cache-control" || true
             done
           done

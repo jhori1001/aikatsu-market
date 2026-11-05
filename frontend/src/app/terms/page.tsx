@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -134,7 +135,7 @@ export default function TermsPage() {
       <h2>第9条（個人情報の取扱い）</h2>
       <p>
         当サイトの利用によって取得する情報は、別途定める
-        <a href="/privacy">プライバシーポリシー</a>に従って取り扱います。
+        <Link href="/privacy">プライバシーポリシー</Link>に従って取り扱います。
       </p>
 
       <h2>第10条（お問い合わせ）</h2>

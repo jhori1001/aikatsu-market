@@ -1,4 +1,4 @@
-"""サイト（aikatsu-market.vercel.app）の作り置きのページを作り直させる。
+"""サイト（kadosoba.com/aikatsu。中身は aikatsu-market.vercel.app/aikatsu）の作り置きのページを作り直させる。
 
     python -m app.jobs.revalidate_site            # 合図を送って、全ページを1回ずつ開く
     python -m app.jobs.revalidate_site --no-warm  # 合図だけ
@@ -33,11 +33,14 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-SITE_URL = os.environ.get("SITE_URL", "https://aikatsu-market.vercel.app").rstrip("/")
+# サイトは basePath=/aikatsu（frontend/next.config.mjs）。kadosoba.com/aikatsu は日輪の Vercel が
+# ここへ回しているだけなので、作り直しは Vercel のアイカツのプロジェクトへ直に送る（同じ作り置き）
+SITE_URL = os.environ.get("SITE_URL", "https://aikatsu-market.vercel.app/aikatsu").rstrip("/")
 USER_AGENT = "aikatsu-revalidate (own site; GitHub Actions)"
 WORKERS = 6
 # カード以外の公開ページ
-FIXED_PATHS = ("/", "/cards", "/mylist", "/about", "/terms", "/privacy")
+# ホームは SITE_URL そのもの（basePath の下の "/" は "/aikatsu/" → "/aikatsu" へ転送されるため "" にする）
+FIXED_PATHS = ("", "/cards", "/mylist", "/about", "/terms", "/privacy")
 
 
 def revalidate_key() -> str:

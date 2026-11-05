@@ -42,7 +42,7 @@ jobs:
         run: |
           npm run start -- --port 3000 > /tmp/next.log 2>&1 &
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:3000/about -o /dev/null 2>/dev/null; then
+            if curl -fsS http://127.0.0.1:3000/aikatsu/about -o /dev/null 2>/dev/null; then
               echo "起動しました"; exit 0
             fi
             sleep 2
@@ -55,7 +55,9 @@ jobs:
         run: |
           IFS=',' read -ra LIST <<< "$PATHS"
           for p in "${LIST[@]}"; do
-            code=$(curl -s -o /tmp/page.html -w "%{http_code}" "http://127.0.0.1:3000$p")
+            # サイトは basePath=/aikatsu（ホームの "/" は "/aikatsu"）
+            u="$p"; [ "$u" = "/" ] && u=""
+            code=$(curl -s -o /tmp/page.html -w "%{http_code}" "http://127.0.0.1:3000/aikatsu$u")
             echo "=== $p  status=$code  size=$(wc -c < /tmp/page.html)"
             for key in 'class="big-tile"' 'rank-carousel snap-one' 'more-tile' 'rank-row-more' \
                        'card-price shop' 'card-price"' 'card-price none' 'shop-ref shop-ref-aside' \
@@ -66,6 +68,9 @@ jobs:
               echo "   $key: $n"
             done
             grep -o 'hero-stat-value">[^<]*' /tmp/page.html | sed 's/.*">/   数字: /' || true
+            # basePath（/aikatsu）が付いているか。付いていない画像の道（src="/img…" など）は 0 のはず
+            echo "   /aikatsu 付きの画像: $(grep -o 'src="/aikatsu/[^"]*' /tmp/page.html | wc -l) / 付いていない画像: $(grep -o -E 'src(Set)?="/(img|hero|goods|shops)' /tmp/page.html | wc -l)"
+            grep -o -E '<link rel="canonical" href="[^"]*"|<meta property="og:image" content="[^"]*"' /tmp/page.html | head -2 | sed 's/^/   /' || true
             # 価格の並び（一覧の最初の8枚）
             grep -o 'card-price[^"]*"><span class="card-price-label">[^<]*</span>[^<]*' /tmp/page.html \
               | head -8 | sed 's/.*card-price-label">//; s#</span># #' | sed 's/^/   価格: /'
@@ -79,14 +84,14 @@ jobs:
       - name: 作り直しの合図を試す
         working-directory: backend
         env:
-          SITE_URL: http://127.0.0.1:3000
+          SITE_URL: http://127.0.0.1:3000/aikatsu
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3000/api/revalidate -H 'x-revalidate-key: wrong')
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:3000/aikatsu/api/revalidate -H 'x-revalidate-key: wrong')
           echo "鍵が違うとき: HTTP $code（403 なら正しい）"
           python3 -m app.jobs.revalidate_site --no-warm
-          for path in / /cards /mylist /cards/E1-04_PR /cards/E1-01_PR_p1 /cards/NO-SUCH_CARD; do
+          for path in "" /cards /mylist /cards/E1-04_PR /cards/E1-01_PR_p1 /cards/NO-SUCH_CARD /; do
             for i in 1 2; do
-              code=$(curl -s -o /dev/null -w '%{http_code}' -D /tmp/h.txt "http://127.0.0.1:3000$path")
+              code=$(curl -s -o /dev/null -w '%{http_code}' -D /tmp/h.txt "http://127.0.0.1:3000/aikatsu$path")
               cache=$(grep -i '^x-nextjs-cache' /tmp/h.txt | tr -d '\r' || true)
               echo "合図のあと $path ($i回目): HTTP $code $cache"
             done

@@ -1,4 +1,4 @@
-import { SITE } from "@/lib/site";
+import { SITE, asset } from "@/lib/site";
 import { PROTECTION_GOODS } from "@/lib/protectionGoods";
 
 /**
@@ -18,11 +18,11 @@ export function ProtectionGoods() {
     <details className="goods-section">
       <summary className="goods-summary">
         <picture>
-          <source srcSet="/goods/protection-banner.webp" type="image/webp" />
+          <source srcSet={asset("/goods/protection-banner.webp")} type="image/webp" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             className="goods-banner"
-            src="/goods/protection-banner.jpg"
+            src={asset("/goods/protection-banner.jpg")}
             alt="大切なカードを傷から守る、カードスリーブ・バインダー・ローダー"
             width={2079}
             height={756}

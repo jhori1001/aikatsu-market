@@ -51,7 +51,7 @@ jobs:
         run: |
           npm run start -- --port 3000 > /tmp/next.log 2>&1 &
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:3000/about -o /dev/null 2>/dev/null; then
+            if curl -fsS http://127.0.0.1:3000/aikatsu/about -o /dev/null 2>/dev/null; then
               echo "起動しました"; exit 0
             fi
             sleep 2
@@ -83,7 +83,8 @@ jobs:
             });
 
             for (const [i, path] of paths.entries()) {
-              await page.goto("http://127.0.0.1:3000" + path, { waitUntil: "networkidle" });
+              // サイトは basePath=/aikatsu（ホームの "/" は "/aikatsu"）
+              await page.goto("http://127.0.0.1:3000/aikatsu" + (path === "/" ? "" : path), { waitUntil: "networkidle" });
               await page.waitForTimeout(1500);
               const counts = await page.evaluate(() => {
                 const n = (sel) => document.querySelectorAll(sel).length;

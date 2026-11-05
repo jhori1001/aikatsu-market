@@ -13,7 +13,8 @@
 import { query } from "@/lib/db";
 
 export const SHOP_LABEL = "フルアヘッド";
-export const SHOP_LOGO = "/shops/fullahead.png";
+// basePath（/aikatsu）付き。<img src> にそのまま使うため
+export const SHOP_LOGO = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/shops/fullahead.png`;
 
 export type ShopPrice = {
   shop: string;

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getAllCards, getHomeStats, getIdolList, getRareCards, type Card } from "@/lib/cards";
-import { SITE } from "@/lib/site";
+import { SITE, asset } from "@/lib/site";
 import { getTrackedData, type TrackedCardData } from "@/lib/realPrice";
 import { getLatestShopPrices, getShopMiniHistories, type ShopPrice } from "@/lib/shopPrice";
 import { yen } from "@/lib/format";
@@ -95,8 +95,8 @@ export default async function HomePage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="hero-image"
-          src="/hero-banner-1000.webp"
-          srcSet="/hero-banner-1000.webp 1000w, /hero-banner.webp 2000w"
+          src={asset("/hero-banner-1000.webp")}
+          srcSet={`${asset("/hero-banner-1000.webp")} 1000w, ${asset("/hero-banner.webp")} 2000w`}
           sizes="(min-width: 1040px) 1000px, 100vw"
           width={2000}
           height={750}

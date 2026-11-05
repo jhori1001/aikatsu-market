@@ -18,7 +18,8 @@ export const SITE = {
   email: "wanc0968@gmail.com",
   /** ドメイン・公開範囲が未確定のうちは false のまま */
   isPublic: false,
-  url: "https://example.com",
+  /** 公開URL。OGPと canonical に使う（kadosoba.com の中の /aikatsu。next.config の basePath と同じ） */
+  url: "https://kadosoba.com/aikatsu",
   /**
    * カード保護グッズ（Amazonアソシエイト）紹介セクションを出すかどうか。
    * 2026-11-05 ユーザー指示「日輪と同じ場所配置で置いて」により公開（リンクは日輪と同じ）。
@@ -33,6 +34,14 @@ export const SITE = {
   /** 正式な著作権表記は未確認。公開前に権利者表記を確認して埋める */
   rights: ["非公式のファンサイトです。権利は各権利者に帰属します。"],
 } as const;
+
+/**
+ * public/ の画像や /img/cards/〜 のように、直に書く道の前に basePath（/aikatsu）を付ける。
+ * next/link と router は自動で付くので、これは <img src> や <source srcSet> 用。
+ */
+export function asset(path: string): string {
+  return `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}${path}`;
+}
 
 export const PAGES = [
   { href: "/about", label: "このサイトについて" },
