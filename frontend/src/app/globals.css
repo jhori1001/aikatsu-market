@@ -2426,38 +2426,46 @@ th.num {
 
 /* ヘッダーのすぐ下、ページの一番上に置く姉妹サイトへの細い帯（2026-11-05、ユーザー指示
    「この隙間に欲しいな」）。カドソバ（日輪）とアイカツで同じ見た目。フッターにも同じリンクがある */
-.sister-bar {
-  display: flex;
-  justify-content: flex-end;
-  margin: -4px 0 12px;
-}
-
-/* 相手のサイトのバナー画像（4:1）。スマホは横いっぱい、PCは右上に 440px で置く
-   （2026-11-05、ユーザー指示「右上のところ空いたからこれ挿入して」） */
-.sister-bar a {
+/* 相手のサイトへのバナー（4:1）。ヘッダーのマイリストの横に、ボタンくらいの大きさで置く
+   （2026-11-05、ユーザー指示「マイリストの横。小さくていい、ボタンみたいな感じのサイズで」）。
+   スマホでは1行目の右端、PCでは検索の左 */
+.sister-btn {
+  flex: 0 0 auto;
   display: block;
-  width: 100%;
-  border-radius: var(--radius-sm);
+  height: 32px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm, 0 1px 4px rgba(0, 0, 0, 0.1));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
   transition: transform 0.12s ease;
 }
 
-.sister-bar a:active {
-  transform: scale(0.98);
+.sister-btn:active {
+  transform: scale(0.96);
 }
 
-.sister-bar img {
+.sister-btn img {
   display: block;
-  width: 100%;
-  height: auto;
+  height: 100%;
+  width: auto;
   aspect-ratio: 4 / 1;
-  object-fit: cover;
 }
 
-@media (min-width: 560px) {
-  .sister-bar a {
-    width: 440px;
+/* スマホでは1行目（ロゴ・カード・マイリスト・バナー）に収まるよう、バナーを小さく・間隔を詰める */
+@media (max-width: 559px) {
+  .site-header-inner {
+    column-gap: 12px;
+  }
+  .site-nav {
+    gap: 12px;
+  }
+  .sister-btn {
+    height: 28px;
+  }
+}
+
+@media (max-width: 379px) {
+  .sister-btn {
+    height: 24px;
   }
 }
 

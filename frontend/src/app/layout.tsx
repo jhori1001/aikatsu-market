@@ -82,28 +82,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ))}
               <MyListLink />
             </nav>
+            {/* 相手のサイト（カドソバ＝日輪とアイカツ）へのバナー。マイリストの横に小さなボタンの大きさで
+                置く（2026-11-05、ユーザー指示）。相手のサイトの道なので next/link ではなく <a> */}
+            <a className="sister-btn" href="https://kadosoba.com/" aria-label="バトスラ（日輪）の相場はこちら">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={asset("/sister/nichirin-banner-800.webp")} width={800} height={200} alt="バトスラ（日輪）の相場はこちら" decoding="async" />
+            </a>
+
             <HeaderSearch />
           </div>
         </header>
 
-        <main>
-          {/* 姉妹サイトへの細い帯（ヘッダーとページの間）。カドソバ（日輪）＝ kadosoba.com のトップ。basePath=/aikatsu が付かないよう <a> で直に書く */}
-          <div className="sister-bar">
-            <a href="https://kadosoba.com/" aria-label="バトスラ（日輪）の相場はこちら">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={asset("/sister/nichirin-banner-800.webp")}
-                srcSet={`${asset("/sister/nichirin-banner-800.webp")} 800w, ${asset("/sister/nichirin-banner-1600.webp")} 1600w`}
-                sizes="(min-width: 560px) 440px, 100vw"
-                width={1600}
-                height={400}
-                alt="バトスラ（日輪）の相場はこちら"
-                decoding="async"
-              />
-            </a>
-          </div>
-          {children}
-        </main>
+        <main>{children}</main>
 
         <Footer />
       </body>
