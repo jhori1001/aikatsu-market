@@ -2419,6 +2419,8 @@ th.num {
 .sister-btn {
   flex: 0 0 auto;
   display: block;
+  /* 右寄せ（PCは検索のすぐ左、スマホは1行目の右端。2026-11-05、日輪と同じ） */
+  margin-left: auto;
   height: 32px;
   border-radius: 8px;
   overflow: hidden;
@@ -2457,6 +2459,11 @@ th.num {
   .sister-btn {
     height: 24px;
   }
+}
+
+/* バナーの右に検索が続くので、検索側の右寄せは外す */
+.sister-btn + .header-search {
+  margin-left: 0;
 }
 
 
