@@ -27,7 +27,7 @@ export const SITE = {
    * 2026-11-05 ユーザー指示「日輪と同じ場所配置で置いて」により公開（リンクは日輪と同じ）。
    */
   showProtectionGoods: true,
-  /** データの取得元。このサイトについて・プライバシーポリシーで参照する */
+  /** データの取得元。運営者情報・プライバシーポリシーで参照する */
   sources: [
     { name: "アイカツ！アンコール公式カードリスト", what: "カード画像" },
     { name: "Yahoo!フリマ", what: "販売中の出品価格" },
@@ -46,7 +46,7 @@ export function asset(path: string): string {
 }
 
 export const PAGES = [
-  { href: "/about", label: "このサイトについて" },
+  { href: "/about", label: "運営者情報" },
   { href: "/terms", label: "利用規約" },
   { href: "/privacy", label: "プライバシーポリシー" },
 ] as const;

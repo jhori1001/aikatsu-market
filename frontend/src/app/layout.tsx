@@ -6,8 +6,13 @@ import { HeaderSearch } from "@/components/HeaderSearch";
 import { MyListLink } from "@/components/MyListLink";
 import { SITE, asset } from "@/lib/site";
 
-const DESCRIPTION = `『${SITE.game}』のカード相場をフリマの出品データからまとめるサイトです。値段の推移・ランキング・出品の内訳を毎日更新します。`;
-const TITLE = `${SITE.game} 最新相場｜${SITE.name}`;
+// 検索結果に出る説明文。日輪（「…最新相場情報。高騰・下落ランキング、取引件数などを…」）と同じ形の
+// アイカツ版（2026-11-05、ユーザー指示）。アイカツの相場は1日1回の更新なので「リアルタイム」とは書かない
+const DESCRIPTION =
+  `『${SITE.game}』（アイカツ）の最新相場情報。値動きのグラフ、パラレルの高額ランキング、`
+  + "フリマとショップの価格などを毎日更新で確認できます。";
+// 題名の先頭はゲームの正式名称にする（日輪と同じ。検索する人は「カドソバ」を知らない）
+const TITLE = `${SITE.game} カード相場・価格推移｜${SITE.name}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),

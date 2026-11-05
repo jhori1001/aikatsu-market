@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: `このサイトについて｜${SITE.name}`,
-  description: `${SITE.name}の運営について、データの取得元について。`,
+  title: `運営者情報｜${SITE.name}`,
+  description: `${SITE.name}（${SITE.game}の相場）の運営者情報と、サイトの目的・データの取得元について。`,
   alternates: { canonical: "/about" },
 };
 
 export default function AboutPage() {
   return (
     <article className="doc">
-      <h1>このサイトについて</h1>
+      <h1>運営者情報</h1>
 
       <dl className="doc-kv">
         <dt>サイト名</dt>

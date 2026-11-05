@@ -21,8 +21,8 @@ export const dynamic = "force-static";
 export const revalidate = false;
 
 export const metadata: Metadata = {
-  title: `カード一覧・相場｜${SITE.name}`,
-  description: `『${SITE.game}』のカードの相場を一覧で。シリーズ・レアリティ・アイドルで絞り込めます。`,
+  title: `カード一覧｜${SITE.game}の相場・価格推移｜${SITE.name}`,
+  description: `『${SITE.game}』の収録カードを一覧で。シリーズ・レアリティ・アイドル・パラレルで絞り込み、販売中の出品の平均をカードごとに確認できます。`,
   // 絞り込みや並び替えを付けたURLも同じ一覧なので、本物はここだと伝える
   alternates: { canonical: "/cards" },
 };

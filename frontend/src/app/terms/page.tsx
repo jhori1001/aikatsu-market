@@ -147,7 +147,7 @@ export default function TermsPage() {
             <a href={`mailto:${SITE.email}`}>{SITE.email}</a> までご連絡ください。
           </>
         ) : (
-          <>「このサイトについて」に記載の連絡先までお願いいたします。</>
+          <>「運営者情報」に記載の連絡先までお願いいたします。</>
         )}
       </p>
 
