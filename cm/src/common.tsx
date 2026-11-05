@@ -114,7 +114,7 @@ export const BigText: React.FC<{ children: React.ReactNode; size?: number; color
 );
 
 /** 字幕（いまのナレーションを下に出す）＋ナレーションの音（あれば） */
-export const Narration: React.FC<{ lines: Line[]; bottom?: number }> = ({ lines, bottom = 210 }) => {
+export const Narration: React.FC<{ lines: Line[]; bottom?: number }> = ({ lines, bottom = 480 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const t = frame / fps;
@@ -139,18 +139,30 @@ export const Narration: React.FC<{ lines: Line[]; bottom?: number }> = ({ lines,
               transform: `translateY(${(1 - op) * 20}px)`,
               fontFamily,
               fontWeight: 900,
-              fontSize: 48,
+              fontSize: 46,
+              lineHeight: 1.35,
               color: INK,
               background: "rgba(255,255,255,0.92)",
               border: `5px solid ${PINK}`,
-              borderRadius: 999,
-              padding: "18px 42px",
+              borderRadius: 48,
+              padding: "16px 42px",
               maxWidth: 980,
               textAlign: "center",
               boxShadow: "0 10px 30px rgba(58,34,51,0.15)",
             }}
           >
-            {cur.text}
+            {cur.text.length > 16 && /[、。]/.test(cur.text.slice(0, -1))
+              ? (() => {
+                  const i = cur.text.search(/[、。]/) + 1;
+                  return (
+                    <>
+                      {cur.text.slice(0, i)}
+                      <br />
+                      {cur.text.slice(i)}
+                    </>
+                  );
+                })()
+              : cur.text}
           </div>
         </AbsoluteFill>
       ) : null}
@@ -272,5 +284,75 @@ export const EndCard: React.FC<{ credit: string; accent?: string }> = ({ credit,
         </div>
       </div>
     </AbsoluteFill>
+  );
+};
+
+/** スマホの枠。中に children（サイトの画面を組んだもの）か、撮った写真（file）を入れて見せる。
+ *  scroll は 0→1 で、写真の上から下へ（maxScroll px まで）送る */
+export const Phone: React.FC<{ file?: string; scroll?: number; maxScroll?: number; width?: number; style?: React.CSSProperties; children?: React.ReactNode }> = ({
+  file,
+  scroll = 0,
+  maxScroll = 0,
+  width = 640,
+  style,
+  children,
+}) => {
+  const height = Math.round(width * 2.05);
+  const bezel = Math.round(width * 0.035);
+  return (
+    <div
+      style={{
+        position: "relative",
+        width,
+        height,
+        borderRadius: width * 0.13,
+        background: "#1d1418",
+        padding: bezel,
+        boxShadow: "0 40px 90px rgba(58,34,51,0.35), 0 0 0 6px #ffd9ea",
+        ...style,
+      }}
+    >
+      <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: width * 0.1, overflow: "hidden", background: "#fff" }}>
+        {file ? <Img src={staticFile(`shots/${file}`)} style={{ width: "100%", display: "block", transform: `translateY(${-scroll * maxScroll}px)` }} /> : null}
+        {children}
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: bezel + 14,
+          left: "50%",
+          width: width * 0.28,
+          height: width * 0.065,
+          marginLeft: -width * 0.14,
+          borderRadius: 999,
+          background: "#1d1418",
+        }}
+      />
+    </div>
+  );
+};
+
+/** 指でタップした印（ぽわっと広がる丸） */
+export const Tap: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) => {
+  const frame = useCurrentFrame();
+  const t = frame - at;
+  if (t < 0 || t > 18) return null;
+  const s = interpolate(t, [0, 18], [0.4, 1.6]);
+  const o = interpolate(t, [0, 18], [0.9, 0]);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x - 50,
+        top: y - 50,
+        width: 100,
+        height: 100,
+        borderRadius: 999,
+        background: "rgba(255,95,162,0.45)",
+        border: "6px solid #ff5fa2",
+        transform: `scale(${s})`,
+        opacity: o,
+      }}
+    />
   );
 };

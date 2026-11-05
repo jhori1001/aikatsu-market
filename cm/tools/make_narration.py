@@ -4,8 +4,8 @@
 
 VOICEVOX CORE 0.16.4 の Python 版・voicevox_onnxruntime 1.17.3・open_jtalk の辞書・0.vvm を
 VV のフォルダに置いて使う（GitHub の各リリースから落とす。cm/README.md を参照）。
-A版: 四国めたん（あまあま、スタイルID 0）、B版: 春日部つむぎ（ノーマル、8）。
-利用規約により、動画には「VOICEVOX:四国めたん」「VOICEVOX:春日部つむぎ」とクレジットを出す。
+声は2本とも 春日部つむぎ（ノーマル、スタイルID 8）。
+利用規約により、動画には「VOICEVOX:春日部つむぎ」とクレジットを出す。
 """
 import json
 import os
@@ -21,17 +21,21 @@ OUT = os.path.join(HERE, "..", "public", "audio")
 
 # src/lines.ts と同じ台本（読み方を整えたもの。字幕は lines.ts の文を出す）
 SCRIPT = {
-    "a": (0, [
-        "アイカツ！アンコールのカード、いまいくら？",
-        "フリマの相場が、毎日わかるよ！",
-        "パラレルも、ランキングでチェック！",
-        "カドソバで、検索してね！",
+    # TikTok 版（声: 春日部つむぎ）
+    "tt": (8, [
+        "そのカード、上がってる？下がってる？",
+        "カドソバなら、値動きがグラフでひと目でわかる！",
+        "フリマの相場を、毎日自動で記録。",
+        "パラレルもショップ価格も、まとめてチェック！",
+        "カドソバ アイカツで、検索してね！",
     ]),
-    "b": (8, [
-        "そのカード、売る前に。買う前に。",
-        "アイカツの相場、チェックしよっ！",
-        "値動きも、グラフでひと目でわかる！",
-        "カドソバ、アイカツで、検索！",
+    # YouTube ショート版（声: 春日部つむぎ）
+    "yt": (8, [
+        "アイカツのカード、売りどき、わかる？",
+        "値動きのグラフで、相場の流れがまるわかり！",
+        "気になるカードは、マイリストに入れておけるよ。",
+        "相場は毎日更新。パラレルのランキングも！",
+        "カドソバ アイカツで、検索！",
     ]),
 }
 
@@ -45,11 +49,11 @@ lengths = {}
 for ver, (style, lines) in SCRIPT.items():
     for i, text in enumerate(lines, 1):
         q = syn.create_audio_query(text, style)
-        q.speed_scale = 1.12   # 15秒に収まるよう少し速く
+        q.speed_scale = 1.12   # テンポよく、でも早すぎない
         q.intonation_scale = 1.25  # かわいく、抑揚を少し大きく
         q.pitch_scale = 0.02
         q.pre_phoneme_length = 0.05
-        q.post_phoneme_length = 0.1
+        q.post_phoneme_length = 0.05
         wav = syn.synthesis(q, style)
         path = os.path.join(OUT, f"narr-{ver}-{i}.wav")
         with open(path, "wb") as f:
