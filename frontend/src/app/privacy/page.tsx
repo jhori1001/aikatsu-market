@@ -13,8 +13,8 @@ export const metadata: Metadata = {
  * 導入したらここを true にして該当の条を出す。
  */
 const USES_ADS = false;
-/** アクセス解析はまだ入れていない（アイカツ側には測定IDが無い） */
-const USES_ANALYTICS = false;
+/** Googleアナリティクスを使っているか。設定にIDが入っていれば自動で連動させる（日輪と同じ） */
+const USES_ANALYTICS = Boolean(SITE.gaMeasurementId);
 
 /**
  * アフィリエイトリンク（Amazonアソシエイト）を使っているか。
