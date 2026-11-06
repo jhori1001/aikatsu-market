@@ -67,6 +67,8 @@ jobs:
             echo "=== $u"
             echo "   noindex: $(echo "$html" | grep -o '<meta name="robots" content="[^"]*"' | head -1)"
             echo "   canonical: $(echo "$html" | grep -o '<link rel="canonical" href="[^"]*"' | head -1)"
+            echo "   アナリティクス: $(echo "$html" | grep -o 'gtag/js?id=G-[A-Z0-9]*' | head -1)"
+            echo "   題名: $(echo "$html" | grep -o '<title>[^<]*</title>' | head -1)"
             echo "   姉妹サイト: $(echo "$html" | grep -o 'footer-sister.\{0,200\}' | grep -o 'href="[^"]*"' | head -1)"
             echo "   上の帯: $(echo "$html" | grep -o 'sister-bar.\{0,120\}' | grep -o 'href="[^"]*"' | head -1)"
           done
