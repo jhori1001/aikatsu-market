@@ -26,9 +26,14 @@ export function searchKeyword(card: {
     .join(" ");
 }
 
-export function mercariSearchUrl(keyword: string): string {
+/**
+ * メルカリの検索結果。アフィリエイトIDが設定されていれば付ける（カドソバと同じ）。
+ * メルカリアンバサダーのリンクは afid= を足すだけなので、カードごとに手で作らなくても組み立てられる。
+ */
+export function mercariSearchUrl(keyword: string, affiliateId = ""): string {
   const url = new URL("https://jp.mercari.com/search");
   url.searchParams.set("keyword", keyword);
+  if (affiliateId) url.searchParams.set("afid", affiliateId);
   return url.toString();
 }
 

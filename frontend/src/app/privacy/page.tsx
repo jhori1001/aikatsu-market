@@ -23,7 +23,10 @@ const USES_ANALYTICS = Boolean(SITE.gaMeasurementId);
  * 第三者配信の広告（USES_ADS）とは別物として扱う。こちらは当サイトが
  * Cookieを置くわけではなく、書くべき内容が違うため。
  */
-const USES_AFFILIATE = Boolean(SITE.showProtectionGoods);
+const USES_AMAZON = Boolean(SITE.showProtectionGoods);
+/** メルカリアンバサダー（「メルカリで探す」）を使っているか。IDが入っていれば自動で連動させる */
+const USES_MERCARI = Boolean(SITE.mercariAffiliateId);
+const USES_AFFILIATE = USES_AMAZON || USES_MERCARI;
 
 /**
  * 第7条（Cookie）のあとに並ぶ、出たり消えたりする条（解析・アフィリエイト・広告）の数。
@@ -145,13 +148,23 @@ export default function PrivacyPage() {
       {USES_AFFILIATE ? (
         <>
           <h2>第{USES_ANALYTICS ? 9 : 8}条（アフィリエイトプログラム）</h2>
-          <p>
-            当サイトは、Amazon.co.jp を宣伝しリンクすることによってサイトが紹介料を
-            獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである
-            「Amazonアソシエイト・プログラム」に参加しています。
-            カードのページに置いているカード保護グッズの「Amazonで見る」は広告リンクであり、
-            そこから移動して購入された場合、当サイトに紹介料が支払われます。
-          </p>
+          {USES_MERCARI ? (
+            <p>
+              当サイトは、株式会社メルカリが運営するアフィリエイトプログラム
+              「メルカリアンバサダー」に参加しています。
+              カードのページに置いている「メルカリで探す」は広告リンクであり、
+              そこから移動して購入された場合、当サイトに紹介料が支払われます。
+            </p>
+          ) : null}
+          {USES_AMAZON ? (
+            <p>
+              当サイトは、Amazon.co.jp を宣伝しリンクすることによってサイトが紹介料を
+              獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである
+              「Amazonアソシエイト・プログラム」に参加しています。
+              カードのページに置いているカード保護グッズの「Amazonで見る」は広告リンクであり、
+              そこから移動して購入された場合、当サイトに紹介料が支払われます。
+            </p>
+          ) : null}
           <p>
             このリンクを経由しても、利用者が支払う金額は変わりません。
             また、購入した商品や金額、氏名・住所などの情報が当サイトに渡ることはありません。

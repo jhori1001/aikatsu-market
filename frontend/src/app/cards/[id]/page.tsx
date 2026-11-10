@@ -132,9 +132,9 @@ export default async function CardDetailPage({
         <div className="buy-row">
           <a
             className="buy-btn mercari"
-            href={mercariSearchUrl(keyword)}
+            href={mercariSearchUrl(keyword, SITE.mercariAffiliateId)}
             target="_blank"
-            rel="noreferrer"
+            rel={SITE.mercariAffiliateId ? "sponsored nofollow noreferrer" : "noreferrer"}
           >
             メルカリで探す
           </a>
