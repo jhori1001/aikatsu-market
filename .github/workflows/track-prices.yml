@@ -24,6 +24,10 @@ on:
         type: boolean
         required: false
         default: true
+      resolve_limit:
+        description: "売れたか確かめる件数の上限（ふだん200。溜まった分を一気に片付けるときに増やす。1件約4秒）"
+        required: false
+        default: "200"
       code:
         description: "対象を1枚に絞る（official_code、例: E1-78_PR / 空なら全ER・PR）"
         required: false
@@ -32,7 +36,7 @@ on:
 jobs:
   track:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 100
 
     defaults:
       run:
@@ -79,7 +83,8 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             ARGS="--dry-run"
           fi
-          python -m app.jobs.resolve_listings $ARGS
+          LIMIT="${{ inputs.resolve_limit }}"
+          python -m app.jobs.resolve_listings $ARGS --limit "${LIMIT:-200}"
 
       # サイトの作り置きのページを作り直させる（カドソバの F2 と同じ、2026-11-05）。
       # 公開ページは毎日の更新のあとに1回だけ作り、あとは作り置きを出す形なので、

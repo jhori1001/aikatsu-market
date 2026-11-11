@@ -26,7 +26,7 @@ import re
 import unicodedata
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from app.collectors.http import CrawlError
@@ -282,6 +282,20 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                 if parallel_card is not None:
                     adopted_prices[parallel_card.id] = []
                 with session_scope() as db:
+                    # 検索結果に「売り切れ」で出てきた出品は、記録済みならその場で売切にする
+                    # （商品ページを開かずに済む。2026-11-11、ユーザー指摘「販売中のやつが売り切れのやつが結構ある」）
+                    sold_ids = [x.item_id for x in listings if x.is_sold]
+                    if sold_ids:
+                        res = db.execute(
+                            update(SaleListing)
+                            .where(
+                                SaleListing.source == SaleSource.YAHOO_FLEA,
+                                SaleListing.external_id.in_(sold_ids),
+                                SaleListing.listing_status == ListingStatus.OPEN,
+                            )
+                            .values(listing_status=ListingStatus.SOLD, sold_at=now, resolved_at=now)
+                        )
+                        stats["marked_sold_from_search"] = stats.get("marked_sold_from_search", 0) + (res.rowcount or 0)
                     for listing in listings:
                         if not listing.is_open:
                             continue

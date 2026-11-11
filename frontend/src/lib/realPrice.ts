@@ -37,6 +37,8 @@ export type RealListing = {
   url: string;
   firstSeenAt: string;
   lastSeenAt: string;
+  /** 売れた日時（商品ページの更新日時）。売切のときだけ */
+  soldAt: string | null;
   /** open（販売中）/ sold（売却済み）/ withdrawn（掲載終了）。resolve_listings が商品ページで確かめる */
   listingStatus: string;
   /** Yahoo!フリマの状態コード（new / used10 …）。古い記録には無い */
@@ -176,15 +178,16 @@ export async function getRealListings(cardPk: number, limit = 200): Promise<Real
     url: string;
     first_seen_at: string;
     last_seen_at: string;
+    sold_at: string | null;
     listing_status: string;
     item_condition: string | null;
     condition_grade: string | null;
   }>(
-    `select id, title, price, url, first_seen_at, last_seen_at, listing_status,
+    `select id, title, price, url, first_seen_at, last_seen_at, sold_at, listing_status,
             item_condition, condition_grade
        from sale_listings
       where card_pk = $1 and is_adopted is true
-      order by last_seen_at desc
+      order by coalesce(sold_at, last_seen_at) desc
       limit $2`,
     [cardPk, limit],
   );
@@ -195,6 +198,7 @@ export async function getRealListings(cardPk: number, limit = 200): Promise<Real
     url: r.url,
     firstSeenAt: r.first_seen_at,
     lastSeenAt: r.last_seen_at,
+    soldAt: r.sold_at,
     listingStatus: r.listing_status,
     itemCondition: r.item_condition,
     conditionGrade: r.condition_grade,

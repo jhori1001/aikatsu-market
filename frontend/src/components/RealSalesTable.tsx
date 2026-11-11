@@ -19,7 +19,7 @@ const PAGE = 10;
 
 const STATUS: [string, string][] = [
   ["all", "すべて"],
-  ["sold", "売却済み"],
+  ["sold", "売切"],
   ["open", "販売中"],
   ["withdrawn", "掲載終了"],
 ];
@@ -57,14 +57,14 @@ const CONDITION_LABEL: Record<string, string> = {
 
 const STATUS_LABEL: Record<string, string> = {
   open: "販売中",
-  sold: "売却済み",
+  sold: "売切",
   withdrawn: "掲載終了",
   unknown: "不明",
 };
 
-/** 並べ替えに使う日付。最後に見た日。 */
+/** 並べ替えに使う日付。売切は売れた日、それ以外は最後に見た日（日輪と同じ）。 */
 function timeOf(item: RealListing): number {
-  const t = Date.parse(item.lastSeenAt);
+  const t = Date.parse(item.soldAt ?? item.lastSeenAt);
   return Number.isNaN(t) ? 0 : t;
 }
 
@@ -173,7 +173,7 @@ export function RealSalesTable({ items }: { items: RealListing[] }) {
                       {STATUS_LABEL[item.listingStatus] ?? item.listingStatus}
                     </span>
                   </td>
-                  <td className="nowrap faint">{dayLabel(item.lastSeenAt)}</td>
+                  <td className="nowrap faint">{dayLabel(item.soldAt ?? item.lastSeenAt)}</td>
                   <td>
                     <span
                       className={`badge ${GRADE_TONE[item.conditionGrade ?? ""] ?? ""}`}
