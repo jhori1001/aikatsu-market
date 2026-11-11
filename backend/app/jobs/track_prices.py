@@ -36,12 +36,31 @@ from app.db import session_scope
 from app.jobs.runner import batch_run
 from app.models import Card, DailyPrice, ListingStatus, LogStatus, SaleListing, SaleSource
 from app.services.conditions import classify
+from app.services.pricing import PricingConfig, remove_outliers
 
 logger = logging.getLogger(__name__)
 
 JOB_NAME = "track_prices"
 TARGET_SUFFIXES = ("ER", "PR")
 MIN_SAMPLES_FOR_AVERAGE = 3
+
+# 外れ値の除き方はカドソバ（services/pricing.py）と同じ: 中央値の6倍超・6分の1未満を先に落とし、
+# IQR法と中央値の0.5〜2倍のガードをかける（2026-11-11、E1-02_PR_p1 に 899,999円の出品が採用され、
+# 平均が 11,280円 → 70,740円に跳ねた）。4件未満では除かない（除きすぎて0件になるのを防ぐ）
+PRICING = PricingConfig()
+
+
+def asking_average(prices: list[int]) -> int | None:
+    """販売中の出品価格から、外れ値を除いた平均（10円単位）。3件未満なら None。"""
+    kept = remove_outliers(prices, PRICING).kept
+    # カドソバの除き方は4件未満では何もしない。アイカツは3件から平均を出すので、3件のときも
+    # 中央値の6倍超・6分の1未満だけは落とす（[10000, 11000, 899999] が 307,000円にならないように）
+    if len(kept) == len(prices) and len(prices) == MIN_SAMPLES_FOR_AVERAGE:
+        med = sorted(prices)[1]
+        kept = [v for v in prices if med / PRICING.hard_ratio <= v <= med * PRICING.hard_ratio]
+    if len(kept) < MIN_SAMPLES_FOR_AVERAGE:
+        return None
+    return round(sum(kept) / len(kept) / 10) * 10
 
 # 明らかにこのカード1枚の値段ではないと分かる出品を弾く
 BULK_KEYWORDS = ("まとめ", "セット", "コンプ", "福袋", "大量", "全種", "ばら売り不可")
@@ -304,9 +323,8 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                         db.execute(stmt)
 
                     for pk, prices in adopted_prices.items():
-                        average = None
-                        if len(prices) >= MIN_SAMPLES_FOR_AVERAGE:
-                            average = round(sum(prices) / len(prices) / 10) * 10
+                        average = asking_average(prices)
+                        if average is not None:
                             stats["cards_with_price"] += 1
                         else:
                             stats["cards_without_price"] += 1

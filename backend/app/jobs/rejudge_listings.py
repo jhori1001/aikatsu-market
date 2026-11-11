@@ -34,6 +34,7 @@ from app.config import settings
 from app.db import session_scope
 from app.jobs.track_prices import (
     MIN_SAMPLES_FOR_AVERAGE,
+    asking_average,
     base_code,
     exclusion_reason,
     target_card,
@@ -149,9 +150,7 @@ def run(*, dry_run: bool) -> dict:
                 if (pcard.id, date) in have:
                     continue
                 prices = [p for first, last, p in by_card.get(pcard.id, []) if first <= date <= last]
-                average = None
-                if len(prices) >= MIN_SAMPLES_FOR_AVERAGE:
-                    average = round(sum(prices) / len(prices) / 10) * 10
+                average = asking_average(prices)
                 stats["パラレル版の日次を新しく作る"] += 1
                 logger.info(
                     "日次(新) %s %s: %s円(%d件)", pcard.official_code, date, average, len(prices)
@@ -169,9 +168,7 @@ def run(*, dry_run: bool) -> dict:
             if row.card_pk not in touched:
                 continue
             prices = [p for first, last, p in by_card.get(row.card_pk, []) if first <= row.date <= last]
-            average = None
-            if len(prices) >= MIN_SAMPLES_FOR_AVERAGE:
-                average = round(sum(prices) / len(prices) / 10) * 10
+            average = asking_average(prices)
             if average != row.average_asking_price or len(prices) != row.asking_count:
                 stats["日次平均が変わる行"] += 1
                 card = cards.get(row.card_pk)
