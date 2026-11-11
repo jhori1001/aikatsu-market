@@ -3031,3 +3031,90 @@ th.num {
   line-height: 1.5;
 }
 
+
+/* ========== ランキングのページ（日輪と同じ、2026-11-11） ========== */
+
+.rank-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
+.rank-tab {
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rank-tab.current {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ホームの横スクロールと同じタイルを、こちらでは格子に並べる。
+   タイル自体は横並び用に幅が固定されているので、ここで解いておく */
+/* スマホは縦に1枚ずつ。幅が半分になると、絵も数字もグラフも読みにくい */
+.big-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+/* 画面が広ければ横に2枚。1枚あたりの幅はスマホのときと変わらないので、
+   中身が潰れることはない */
+@media (min-width: 760px) {
+  .big-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+    max-width: 940px;
+  }
+}
+
+
+.big-grid .big-tile {
+  width: auto;
+}
+
+.big-grid-item {
+  position: relative;
+  /* 順位の丸を置く場所を、タイルの外側に空けておく。
+     重ねるとカード名の1文字目に かぶる */
+  padding-left: 30px;
+}
+
+/* 順位はタイルの左、名前と同じ高さに置く */
+.big-grid-no {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  z-index: 1;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(28, 29, 34, 0.85);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.big-grid-no.medal-1 {
+  background: linear-gradient(140deg, #e8b64a, #c8921f);
+}
+.big-grid-no.medal-2 {
+  background: linear-gradient(140deg, #b9bec9, #8d939f);
+}
+.big-grid-no.medal-3 {
+  background: linear-gradient(140deg, #cf9264, #a76c42);
+}

@@ -168,7 +168,7 @@ export default async function HomePage() {
             <h2 className="section-head-title">
               価格ランキング <small>販売中の平均の高い順</small>
             </h2>
-            <Link href="/cards?sort=price_desc" className="section-more">
+            <Link href="/ranking" className="section-more">
               すべて見る
             </Link>
           </div>
