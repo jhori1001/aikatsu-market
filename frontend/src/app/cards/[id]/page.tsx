@@ -1,10 +1,12 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { displayCode, getCard } from "@/lib/cards";
 import { SITE } from "@/lib/site";
 import { RARITY_SHORT_LABEL, rarityClass } from "@/lib/rarity";
-import { getRealPriceSeries, getRealSummary, getRealListings } from "@/lib/realPrice";
+import { getGradeData, getRealPriceSeries, getRealSummary, getRealListings, type Grade, type GradeData } from "@/lib/realPrice";
+import { DetailPrice, DetailPriceFromUrl } from "@/components/DetailPrice";
 import { getLatestShopPrices, getShopHistory, type ShopPricePoint } from "@/lib/shopPrice";
 import { yen, num, dayLabel, mercariSearchUrl, yahooSearchUrl, searchKeyword } from "@/lib/format";
 import { CardArtFlip } from "@/components/CardArtFlip";
@@ -74,6 +76,7 @@ export default async function CardDetailPage({
 
   let priceSeries: { date: string; price: number }[] = [];
   let summary: Awaited<ReturnType<typeof getRealSummary>> | null = null;
+  let grades: Record<Grade, GradeData> | null = null;
   let listings: Awaited<ReturnType<typeof getRealListings>> = [];
   const [shops, shopHistory] = await Promise.all([
     getLatestShopPrices(),
@@ -82,18 +85,23 @@ export default async function CardDetailPage({
   const shopPrices = shops.get(card.id) ?? { normal: null, parallel: null };
   const shop = shopPrices.normal;
   if (tracked) {
-    const [series, s, l] = await Promise.all([
+    const [series, s, l, gd] = await Promise.all([
       getRealPriceSeries(card.id),
       getRealSummary(card.id),
       getRealListings(card.id),
+      getGradeData(card.id),
     ]);
+    grades = gd;
     priceSeries = series.filter((p): p is { date: string; price: number } & typeof p => p.price !== null);
     summary = s;
     listings = l;
   }
   // フリマの相場が出せるか。出せなければショップ参考価格を主役にする（カドソバの
   // BigTile と同じ切り替え。フリマの相場が無いカードにだけ店の値段を大きく出す）
-  const hasFlea = tracked && summary !== null && summary.current !== null;
+  const hasFlea =
+    tracked &&
+    grades !== null &&
+    Object.values(grades).some((g) => g.current !== null || g.series.length > 0);
 
   return (
     <>
@@ -143,55 +151,23 @@ export default async function CardDetailPage({
           </a>
         </div>
 
-        {hasFlea && summary ? (
-          <>
-            <div className="detail-price">
-              <div className={`panel ${shop ? "has-shop" : ""}`}>
-                <div className="price-main">
-                  <div className="stat-label">販売中の平均</div>
-                  <div className="price-hero">{yen(summary.current)}</div>
-
-                  <div className="big-tile-diff">
-                    <span className="big-tile-diff-label">前日比</span>
-                    <MiniChange change={summary.change1} />
-                  </div>
-
-                  <div className="stat-mini-row">
-                    <div className="stat-mini-item">
-                      <span className="stat-mini-label">出品数</span>
-                      <span className="stat-mini-value">{num(summary.askingCount)}件</span>
-                    </div>
-                    <div className="stat-mini-item">
-                      <span className="stat-mini-label">7日間</span>
-                      <MiniChange change={summary.change7} />
-                    </div>
-                    <div className="stat-mini-item">
-                      <span className="stat-mini-label">30日間</span>
-                      <MiniChange change={summary.change30} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* PC幅だけ、パネルの右端に置く（狭いときは CSS で隠れ、グラフの下に出る） */}
-                {shop ? (
-                  <ShopRef shop={shop} parallel={shopPrices.parallel} variant="aside" history={shopHistory} />
-                ) : null}
-              </div>
-            </div>
-
-            <div className="detail-chart">
-              {priceSeries.length > 0 ? (
-                <PriceSection points={priceSeries} sample={false} />
-              ) : (
-                <div className="panel price-panel">
-                  <div className="empty">価格データがまだありません。記録が溜まると表示されます。</div>
-                </div>
-              )}
-              {shop ? (
-                <ShopRef shop={shop} parallel={shopPrices.parallel} variant="below" history={shopHistory} />
-              ) : null}
-            </div>
-          </>
+        {hasFlea && grades ? (
+          // 状態（美品／傷あり／すべて）の切り替えは日輪と同じ（DetailPrice、2026-11-11）
+          <Suspense
+            fallback={
+              <DetailPrice
+                grades={grades}
+                shopAside={shop ? <ShopRef shop={shop} parallel={shopPrices.parallel} variant="aside" history={shopHistory} /> : null}
+                shopBelow={shop ? <ShopRef shop={shop} parallel={shopPrices.parallel} variant="below" history={shopHistory} /> : null}
+              />
+            }
+          >
+            <DetailPriceFromUrl
+              grades={grades}
+              shopAside={shop ? <ShopRef shop={shop} parallel={shopPrices.parallel} variant="aside" history={shopHistory} /> : null}
+              shopBelow={shop ? <ShopRef shop={shop} parallel={shopPrices.parallel} variant="below" history={shopHistory} /> : null}
+            />
+          </Suspense>
         ) : shop ? (
           <>
             <div className="detail-price">

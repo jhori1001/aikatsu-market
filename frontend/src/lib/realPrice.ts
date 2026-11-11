@@ -204,3 +204,60 @@ export async function getRealListings(cardPk: number, limit = 200): Promise<Real
     conditionGrade: r.condition_grade,
   }));
 }
+
+// ---------------------------------------------------------------- 状態別（日輪の詳細ページと同じ）
+
+export type Grade = "mint" | "damaged" | "all";
+
+export type GradeData = {
+  /** グラフに使う販売中の平均の推移 */
+  series: { date: string; price: number }[];
+  /** 画面に大きく出す値段。販売中の平均（7日以内）、出なければ売れた価格の平均 */
+  current: number | null;
+  /** current がどちらか。asking＝販売中の平均、sold＝売れた価格の平均 */
+  basis: "asking" | "sold" | null;
+  askingCount: number;
+  soldCount: number;
+  change1: { amount: number | null; ratio: number | null };
+  change7: { amount: number | null; ratio: number | null };
+  change30: { amount: number | null; ratio: number | null };
+};
+
+/** 1枚ぶんの、状態（美品・傷あり・すべて）ごとの相場（daily_prices の3つの行、0005）。 */
+export async function getGradeData(cardPk: number, days = 365): Promise<Record<Grade, GradeData>> {
+  const rows = await query<{
+    date: string;
+    condition_grade: string;
+    average_asking_price: number | null;
+    asking_count: number;
+    average_price: number | null;
+    sample_count: number;
+  }>(
+    `select date, condition_grade, average_asking_price, asking_count, average_price, sample_count
+       from daily_prices
+      where card_pk = $1 and date >= current_date - $2::int
+      order by date`,
+    [cardPk, days],
+  );
+  const out = {} as Record<Grade, GradeData>;
+  for (const grade of ["mint", "damaged", "all"] as Grade[]) {
+    const list = rows.filter((r) => r.condition_grade === grade);
+    const priced = list
+      .filter((r) => r.average_asking_price !== null)
+      .map((r) => ({ date: r.date, price: r.average_asking_price as number }));
+    const latest = list.at(-1) ?? null;
+    const shown = recentPriced(priced, latest?.date ?? null);
+    const sold = latest?.average_price ?? null;
+    out[grade] = {
+      series: priced,
+      current: shown?.price ?? sold,
+      basis: shown ? "asking" : sold !== null ? "sold" : null,
+      askingCount: latest?.asking_count ?? 0,
+      soldCount: latest?.sample_count ?? 0,
+      change1: changeSince(priced, 1),
+      change7: changeSince(priced, 7),
+      change30: changeSince(priced, 30),
+    };
+  }
+  return out;
+}
