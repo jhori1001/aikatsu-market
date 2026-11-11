@@ -2170,8 +2170,7 @@ th.num {
   display: inline-block;
   padding: 4px 8px;
   border-radius: 6px;
-  /* 日輪と同じ赤（アイカツのピンクではなく、2026-11-11 ユーザー指示「色合いも同じに」） */
-  background: #d63b4a;
+  background: var(--accent);
   color: #fff;
   font-size: 10.5px;
   font-weight: 800;
