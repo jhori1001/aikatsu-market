@@ -43,13 +43,15 @@ export function ShopRef({
             {parallel.stock === 0 ? "（在庫なし）" : parallel.stock !== null ? `（在庫${parallel.stock}）` : ""}
           </div>
         ) : null}
-        {history.length > 0 ? (
-          <details className="shop-ref-history">
-            <summary>価格推移</summary>
-            <ShopPriceSection points={history} shopLabel={shop.shop} />
-          </details>
-        ) : null}
       </div>
+      {/* 価格推移は金額・ボタンの下に、箱の幅いっぱいで出す（2026-11-11、
+          ユーザー指摘「横幅狭いから広くして」。カドソバと同じ置き方） */}
+      {history.length > 0 ? (
+        <details className="shop-ref-history">
+          <summary>価格推移</summary>
+          <ShopPriceSection points={history} shopLabel={shop.shop} />
+        </details>
+      ) : null}
     </div>
   );
 }

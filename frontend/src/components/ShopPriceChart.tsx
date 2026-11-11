@@ -135,9 +135,10 @@ export function ShopPriceChart({
               strokeWidth={narrow ? 2 : 2.5}
               fill={`url(#${fillId})`}
               dot={
-                // PriceChart と同じ理由（狭い枠では点を出さない。1点だけの
-                // ときは点が無いと何も描かれない）
-                sparkline || (narrow && !singlePoint)
+                // 店の値段は毎日1点ずつ並ぶので、丸を付けると線が丸で埋まって
+                // 見えなくなる。線だけにする（2026-11-11、ユーザー指摘「◯けして
+                // 線だけにして」）。1点しか無いときだけは、点が無いと何も描かれない
+                !singlePoint
                   ? false
                   : {
                       r: singlePoint ? 5 : 3.5,

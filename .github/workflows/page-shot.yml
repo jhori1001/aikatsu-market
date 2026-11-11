@@ -114,6 +114,38 @@ jobs:
               const name = `shots/${String(i + 1).padStart(2, "0")}${path.replace(/[^a-z0-9]+/gi, "_")}.png`;
               await page.screenshot({ path: name, fullPage: true });
               console.log("   写真:", name);
+
+              // ショップ参考価格の「価格推移」は閉じたままだとグラフが写らないので、
+              // 開いてから、箱だけの写真も撮る（グラフの幅・丸の有無を確かめるため）
+              const shopOpened = await page.evaluate(() => {
+                const ds = [...document.querySelectorAll("details.shop-ref-history")];
+                ds.forEach((d) => (d.open = true));
+                return ds.length;
+              });
+              if (shopOpened) {
+                await page.waitForTimeout(1000);
+                const shopInfo = await page.evaluate(() =>
+                  [...document.querySelectorAll(".shop-ref-history .chart-box")]
+                    .filter((e) => e.offsetParent)
+                    .map((e) => {
+                      const b = e.getBoundingClientRect();
+                      const box = e.closest(".shop-ref").getBoundingClientRect();
+                      return {
+                        グラフの幅: Math.round(b.width),
+                        箱の幅: Math.round(box.width),
+                        グラフの高さ: Math.round(b.height),
+                        丸の数: e.querySelectorAll(".recharts-area-dots circle, circle.recharts-dot").length,
+                      };
+                    }),
+                );
+                console.log("   ショップの価格推移:", JSON.stringify(shopInfo));
+                for (const el of await page.$$(".shop-ref")) {
+                  if (await el.isVisible()) {
+                    await el.screenshot({ path: name.replace(".png", "_shop.png") });
+                    break;
+                  }
+                }
+              }
             }
 
             await browser.close();
