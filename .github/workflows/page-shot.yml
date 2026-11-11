@@ -96,6 +96,10 @@ jobs:
                   // URL の条件がブラウザ側で効いているか（F2）
                   題: text("h1.page-title"),
                   件数表示: text(".page-sub")?.split("·")[0]?.trim() ?? null,
+                  値段の見出し: text(".detail-price .stat-label"),
+                  値段: text(".detail-price .price-hero"),
+                  時点: text(".detail-price .price-asof"),
+                  店名の表示: document.body.innerText.includes("フルアヘッド") ? "フルアヘッドが残っている" : "なし",
                   カード一覧の枚数: n(".card-grid .card-tile"),
                   先頭の値段: prices,
                   押されたチップ: [...document.querySelectorAll(".chip.active")].map((c) => c.textContent.trim()),
