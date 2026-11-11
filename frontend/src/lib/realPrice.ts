@@ -51,7 +51,7 @@ export async function getRealPriceSeries(cardPk: number, days = 90): Promise<Rea
   const rows = await query<{ date: string; average_asking_price: number | null; asking_count: number }>(
     `select date, average_asking_price, asking_count
        from daily_prices
-      where card_pk = $1 and date >= current_date - $2::int
+      where card_pk = $1 and condition_grade = 'all' and date >= current_date - $2::int
       order by date`,
     [cardPk, days],
   );
@@ -123,7 +123,7 @@ export async function getTrackedData(cardPks: number[]): Promise<Map<number, Tra
   }>(
     `select card_pk, date, average_asking_price, asking_count
        from daily_prices
-      where card_pk = any($1::bigint[])
+      where card_pk = any($1::bigint[]) and condition_grade = 'all'
       order by card_pk, date`,
     [cardPks],
   );
@@ -163,7 +163,7 @@ export async function getLatestPrices(): Promise<Map<number, number | null>> {
     // 最新の日に平均が無くても、STALE_DAYS 日以内に出た平均を使う（詳細ページと同じ）
     `select distinct on (card_pk) card_pk, average_asking_price
        from daily_prices
-      where average_asking_price is not null
+      where average_asking_price is not null and condition_grade = 'all'
         and date >= (select max(date) from daily_prices) - ${STALE_DAYS}
       order by card_pk, date desc`,
   );

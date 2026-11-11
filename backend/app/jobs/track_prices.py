@@ -35,6 +35,7 @@ from app.config import settings
 from app.db import session_scope
 from app.jobs.runner import batch_run
 from app.models import Card, DailyPrice, ListingStatus, LogStatus, SaleListing, SaleSource
+from app.services import daily_pricing
 from app.services.conditions import classify
 from app.services.pricing import PricingConfig, remove_outliers
 
@@ -359,6 +360,12 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                         db.execute(price_stmt)
 
             stats["requests"] = collector.request_count
+
+        # 状態（すべて・美品・傷あり）別の日次相場と、売れた価格の統計を書く（日輪と同じ、0005）
+        if not dry_run:
+            with session_scope() as db:
+                pks = [c.id for c in cards] + [parallel_of[c.official_code].id for c in cards if c.official_code in parallel_of]
+                daily_pricing.compute(db, card_pks=pks, dates=[today])
 
         ctx.log(
             f"{JOB_NAME}",

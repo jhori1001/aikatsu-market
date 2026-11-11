@@ -1,0 +1,59 @@
+name: 相場を計算し直す（状態別）
+
+# 保存済みの出品から、日次相場を状態（すべて・美品・傷あり）別に計算し直す（jobs/recompute_prices.py、日輪と同じ考え方）。
+# 外部サイトへはアクセスしない。必ず先に dry_run=true で、何がどれだけ変わるかを見る。
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "数えるだけ（書き換えない）"
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  recompute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      TZ: Asia/Tokyo
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: マイグレーション
+        run: python -m alembic upgrade head
+
+      - name: 相場の計算し直し
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="--dry-run"
+          fi
+          python -m app.jobs.recompute_prices --since 2026-10-01 $ARGS
+
+      # サイトの作り置きのページを作り直させる（カドソバの F2 と同じ、2026-11-05）。
+      # 公開ページは毎日の更新のあとに1回だけ作り、あとは作り置きを出す形なので、
+      # DBの中身を変えたらここで作り直しの合図を送り、全ページを1回ずつ開く。
+      # 数えるだけ（dry_run）や、反映しない（apply=false）ときは流さない。
+      # 失敗しても、ページは前の作り置きのまま出続ける（壊れはしない）。
+      - name: サイトのページを作り直す
+        if: ${{ !cancelled() && format('{0}', inputs.dry_run) != 'true' && format('{0}', inputs.apply) != 'false' }}
+        continue-on-error: true
+        run: python -m app.jobs.revalidate_site
