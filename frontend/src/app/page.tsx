@@ -295,7 +295,7 @@ export default async function HomePage() {
           </div>
           <p className="sample-note">
             ※ ER・PRカードはYahoo!フリマの販売中の出品の平均、それ以外とフリマの相場が出せない
-            カードはカードショップ（フルアヘッド）の販売価格です。
+            カードはカードショップ（某店）の販売価格です。
           </p>
         </section>
       ) : null}

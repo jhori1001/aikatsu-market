@@ -80,6 +80,10 @@ export function BigTile({
               {useShop ? yen(shop!.price) : summary?.current != null ? yen(summary.current) : "データ無"}
             </div>
             {useShop ? <div className="price-asof">{dayLabel(shop!.date)}時点</div> : null}
+            {/* 最新の日は出品が3件未満で平均が出なかったので、直近で出た日の平均を出している */}
+            {!useShop && summary?.stale && summary.asOf ? (
+              <div className="price-asof">{dayLabel(summary.asOf)}時点</div>
+            ) : null}
             <div className="big-tile-diff">
               {useShop ? null : <span className="big-tile-diff-label">前日比</span>}
               <MiniChange change={useShop ? NO_CHANGE : (summary?.change1 ?? NO_CHANGE)} />

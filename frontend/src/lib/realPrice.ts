@@ -10,8 +10,20 @@ import { query } from "@/lib/db";
 
 export type RealPricePoint = { date: string; price: number | null; askingCount: number };
 
+/**
+ * 最新の日の出品が3件未満で平均が出ない日があっても、この日数以内に平均が出た日があれば、
+ * その値を「○日時点」として出し続ける（2026-11-11、ユーザー指摘「販売中なのにショップの価格が出てる」。
+ * オデットスワン パラレルが 11/10 に2件・11/11 に1件になり、相場もグラフも消えて店の値段に切り替わっていた）。
+ * それより古い値は出さない（古い相場を今の相場のように見せない）。
+ */
+export const STALE_DAYS = 7;
+
 export type RealSummary = {
   current: number | null;
+  /** current がどの日の平均か */
+  asOf: string | null;
+  /** 最新の日の平均ではない（最新の日は出品が3件未満だった） */
+  stale: boolean;
   askingCount: number;
   change1: { amount: number | null; ratio: number | null };
   change7: { amount: number | null; ratio: number | null };
@@ -48,6 +60,17 @@ export async function getRealPriceSeries(cardPk: number, days = 90): Promise<Rea
   }));
 }
 
+/** 最新の日から STALE_DAYS 日以内で、いちばん新しく平均が出た日。無ければ null */
+function recentPriced(
+  priced: { date: string; price: number }[],
+  latestDate: string | null,
+): { date: string; price: number } | null {
+  const last = priced.at(-1);
+  if (!last || !latestDate) return null;
+  const gap = (new Date(latestDate).getTime() - new Date(last.date).getTime()) / 86400000;
+  return gap <= STALE_DAYS ? last : null;
+}
+
 function changeSince(
   priced: { date: string; price: number }[],
   daysAgo: number,
@@ -73,8 +96,11 @@ export async function getRealSummary(cardPk: number): Promise<RealSummary> {
   const series = await getRealPriceSeries(cardPk);
   const priced = series.filter((p): p is RealPricePoint & { price: number } => p.price !== null);
   const latest = series.at(-1) ?? null;
+  const shown = recentPriced(priced, latest?.date ?? null);
   return {
-    current: latest?.price ?? null,
+    current: shown?.price ?? null,
+    asOf: shown?.date ?? null,
+    stale: shown !== null && shown.date !== latest?.date,
     askingCount: latest?.askingCount ?? 0,
     change1: changeSince(priced, 1),
     change7: changeSince(priced, 7),
@@ -112,10 +138,13 @@ export async function getTrackedData(cardPks: number[]): Promise<Map<number, Tra
     const series = list.map((r) => ({ date: r.date, price: r.average_asking_price }));
     const priced = series.filter((p): p is { date: string; price: number } => p.price !== null);
     const latest = list.at(-1)!;
+    const shown = recentPriced(priced, latest.date);
     result.set(cardPk, {
       series: priced,
       summary: {
-        current: latest.average_asking_price,
+        current: shown?.price ?? null,
+        asOf: shown?.date ?? null,
+        stale: shown !== null && shown.date !== latest.date,
         askingCount: latest.asking_count,
         change1: changeSince(priced, 1),
         change7: changeSince(priced, 7),
@@ -129,8 +158,11 @@ export async function getTrackedData(cardPks: number[]): Promise<Map<number, Tra
 /** 一覧・ランキング用。カードごとの最新の参考価格をまとめて1回で引く。 */
 export async function getLatestPrices(): Promise<Map<number, number | null>> {
   const rows = await query<{ card_pk: number; average_asking_price: number | null }>(
+    // 最新の日に平均が無くても、STALE_DAYS 日以内に出た平均を使う（詳細ページと同じ）
     `select distinct on (card_pk) card_pk, average_asking_price
        from daily_prices
+      where average_asking_price is not null
+        and date >= (select max(date) from daily_prices) - ${STALE_DAYS}
       order by card_pk, date desc`,
   );
   return new Map(rows.map((r) => [r.card_pk, r.average_asking_price]));

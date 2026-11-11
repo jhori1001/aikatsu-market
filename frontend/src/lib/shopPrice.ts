@@ -12,7 +12,9 @@
 
 import { query } from "@/lib/db";
 
-export const SHOP_LABEL = "フルアヘッド";
+// 画面には店名を出さない（2026-11-11、ユーザー指示「フルアヘッドではなく、某カードショップに変更」）。
+// 店名が分かるロゴ・店のページへのリンクも出さない
+export const SHOP_LABEL = "某カードショップ";
 // basePath（/aikatsu）付き。<img src> にそのまま使うため
 export const SHOP_LOGO = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/shops/fullahead.png`;
 

@@ -150,6 +150,11 @@ export default async function CardDetailPage({
                 <div className="price-main">
                   <div className="stat-label">販売中の平均（Yahoo!フリマ）</div>
                   <div className="price-hero">{yen(summary.current)}</div>
+                  {summary.stale && summary.asOf ? (
+                    <div className="price-asof">
+                      {dayLabel(summary.asOf)}時点（いまの出品は{num(summary.askingCount)}件で、平均は3件以上から出します）
+                    </div>
+                  ) : null}
 
                   <div className="big-tile-diff">
                     <span className="big-tile-diff-label">前日比</span>
@@ -220,17 +225,6 @@ export default async function CardDetailPage({
                         ? `フリマの出品は ${summary.askingCount}件（相場の表示は3件以上から）`
                         : "フリマの相場はまだありません"}
                     </p>
-                  ) : null}
-                  {shop.url ? (
-                    <a
-                      className="shop-ref-btn"
-                      style={{ marginTop: 12 }}
-                      href={shop.url}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                    >
-                      {shop.shop}で見る<span aria-hidden="true"> ↗</span>
-                    </a>
                   ) : null}
                 </div>
               </div>

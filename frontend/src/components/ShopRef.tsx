@@ -29,8 +29,6 @@ export function ShopRef({
     <div className={`shop-ref shop-ref-${variant}${soldOut ? " shop-ref-soldout" : ""}`}>
       <div className="shop-ref-info">
         <div className="shop-ref-head">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="shop-ref-logo" src={shop.logo} alt="" width={36} height={36} />
           <span className="shop-ref-label">ショップ参考価格</span>
           {soldOut ? <span className="shop-ref-soldout-chip">在庫なし</span> : null}
         </div>
@@ -52,18 +50,6 @@ export function ShopRef({
           </details>
         ) : null}
       </div>
-      {shop.url ? (
-        <a
-          className="shop-ref-btn"
-          href={shop.url}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          aria-label={`${shop.shop}の商品ページを開く`}
-        >
-          店で見る
-          <span aria-hidden="true"> ↗</span>
-        </a>
-      ) : null}
     </div>
   );
 }
