@@ -1,6 +1,6 @@
 import React from "react";
-import { AbsoluteFill, Sequence, interpolate, useCurrentFrame } from "remotion";
-import { BigText, Bgm, LAVENDER, Narration, PINK, PinkBg, fontFamily, usePop } from "./common";
+import { AbsoluteFill, Img, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { BigText, Bgm, INK, LAVENDER, Narration, PINK, PinkBg, fontFamily, usePop } from "./common";
 import { EndSearch } from "./end";
 import { LINES_TT } from "./lines";
 import { Callout, CardFromShot, ChartShot, RecPhone, useReveal } from "./real";
@@ -17,30 +17,31 @@ import { Callout, CardFromShot, ChartShot, RecPhone, useReveal } from "./real";
 const fade = (frame: number, len: number) =>
   interpolate(frame, [0, 5, len - 5, len], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
+// 冒頭「アイカツの相場を見るならココ！」（2026-11-11、ユーザー指示）。サイトのバナーを「ココ」と指す
 const Hook: React.FC = () => {
   const frame = useCurrentFrame();
-  const card = usePop(0, 12);
-  const up = usePop(4, 8);
-  const down = usePop(40, 8);
-  const bob = Math.sin(frame / 5) * 14;
+  const head = usePop(0, 10);
+  const banner = usePop(6, 11);
+  const here = usePop(22, 8);
+  const bob = Math.sin(frame / 4) * 12;
   return (
-    <AbsoluteFill style={{ opacity: fade(frame, 97) }}>
+    <AbsoluteFill style={{ opacity: fade(frame, 67) }}>
       <PinkBg />
-      <AbsoluteFill style={{ alignItems: "center", paddingTop: 170 }}>
-        <BigText size={140} style={{ transform: `scale(${up})` }}>
-          上がってる？
+      <AbsoluteFill style={{ alignItems: "center", paddingTop: 220 }}>
+        <BigText size={124} color={INK} style={{ transform: `scale(${head})`, whiteSpace: "nowrap" }}>
+          アイカツの相場を
         </BigText>
       </AbsoluteFill>
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", top: -200 }}>
-        <div style={{ position: "relative" }}>
-          <CardFromShot width={400} style={{ transform: `scale(${card}) rotate(${-4 + Math.sin(frame / 12) * 2}deg)` }} />
-          <div style={{ position: "absolute", left: -150, top: 120 + bob, fontSize: 170, fontWeight: 900, color: PINK, fontFamily, transform: `scale(${up})`, textShadow: "0 8px 20px rgba(255,95,162,0.4)" }}>↑</div>
-          <div style={{ position: "absolute", right: -150, top: 300 - bob, fontSize: 170, fontWeight: 900, color: LAVENDER, fontFamily, transform: `scale(${down})`, textShadow: "0 8px 20px rgba(167,139,250,0.4)" }}>↓</div>
-        </div>
+      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", top: -120 }}>
+        <Img
+          src={staticFile("img/hero-banner.webp")}
+          style={{ width: 960, borderRadius: 40, transform: `scale(${banner})`, boxShadow: "0 30px 70px rgba(255,95,162,0.35)" }}
+        />
       </AbsoluteFill>
-      <AbsoluteFill style={{ alignItems: "center", paddingTop: 1060 }}>
-        <BigText size={140} color={LAVENDER} style={{ transform: `scale(${down})` }}>
-          下がってる？
+      <AbsoluteFill style={{ alignItems: "center", paddingTop: 1010 }}>
+        <div style={{ fontFamily, fontWeight: 900, fontSize: 130, color: PINK, transform: `translateY(${bob}px) scale(${here})`, lineHeight: 1 }}>↑</div>
+        <BigText size={150} style={{ transform: `scale(${here}) rotate(${(1 - here) * -8}deg)`, whiteSpace: "nowrap" }}>
+          見るならココ！
         </BigText>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -87,16 +88,16 @@ const RecScene: React.FC = () => {
 export const CmTikTok: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: "#fff0f7" }}>
     <Bgm file="bgm-a.wav" />
-    <Sequence durationInFrames={97}>
+    <Sequence durationInFrames={67}>
       <Hook />
     </Sequence>
-    <Sequence from={95} durationInFrames={91}>
+    <Sequence from={65} durationInFrames={91}>
       <ChartScene />
     </Sequence>
-    <Sequence from={184} durationInFrames={162}>
+    <Sequence from={154} durationInFrames={162}>
       <RecScene />
     </Sequence>
-    <Sequence from={344}>
+    <Sequence from={314}>
       <EndSearch />
     </Sequence>
     <Narration lines={LINES_TT} bottom={480} />

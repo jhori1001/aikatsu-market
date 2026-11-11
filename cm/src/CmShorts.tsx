@@ -20,11 +20,11 @@ const fade = (frame: number, len: number) =>
 const Hook: React.FC = () => {
   const frame = useCurrentFrame();
   const head = usePop(0, 10);
-  const q = usePop(26, 8);
+  const q = usePop(18, 8);
   const phone = usePop(4, 13);
-  const shake = frame > 26 && frame < 46 ? Math.sin(frame * 1.6) * 5 : 0;
+  const shake = frame > 18 && frame < 36 ? Math.sin(frame * 1.6) * 5 : 0;
   return (
-    <AbsoluteFill style={{ opacity: fade(frame, 92) }}>
+    <AbsoluteFill style={{ opacity: fade(frame, 62) }}>
       <PinkBg />
       <AbsoluteFill style={{ alignItems: "center", paddingTop: 520 }}>
         <div style={{ transform: `translateY(${(1 - phone) * 900}px)` }}>
@@ -32,11 +32,12 @@ const Hook: React.FC = () => {
         </div>
       </AbsoluteFill>
       <AbsoluteFill style={{ alignItems: "center", paddingTop: 150 }}>
-        <BigText size={92} color={INK} style={{ transform: `scale(${head})` }}>
-          アイカツのカード
+        {/* 冒頭「アイカツの相場を見るならココ！」（2026-11-11、ユーザー指示）。下のスマホ（サイトの録画）を「ココ」と指す */}
+        <BigText size={104} color={INK} style={{ transform: `scale(${head})`, whiteSpace: "nowrap" }}>
+          アイカツの相場を
         </BigText>
-        <BigText size={106} style={{ transform: `scale(${q}) rotate(${shake}deg)`, whiteSpace: "nowrap", marginTop: 6 }}>
-          売りどき、わかる？
+        <BigText size={124} style={{ transform: `scale(${q}) rotate(${shake}deg)`, whiteSpace: "nowrap", marginTop: 6 }}>
+          見るならココ！<span style={{ display: "inline-block", transform: `translateY(${Math.sin(frame / 4) * 10}px)` }}>↓</span>
         </BigText>
       </AbsoluteFill>
     </AbsoluteFill>
@@ -84,23 +85,23 @@ const RecScene: React.FC<{ len: number; from: number; rate: number; children?: R
 export const CmShorts: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: "#fff0f7" }}>
     <Bgm file="bgm-b.wav" />
-    <Sequence durationInFrames={92}>
+    <Sequence durationInFrames={62}>
       <Hook />
     </Sequence>
-    <Sequence from={90} durationInFrames={90}>
+    <Sequence from={60} durationInFrames={90}>
       <ChartScene />
     </Sequence>
-    <Sequence from={178} durationInFrames={92}>
+    <Sequence from={148} durationInFrames={92}>
       <RecScene len={92} from={2.8} rate={1.05} />
     </Sequence>
-    <Sequence from={268} durationInFrames={94}>
+    <Sequence from={238} durationInFrames={94}>
       <RecScene len={94} from={6.0} rate={0.5}>
         <Callout at={40} style={{ left: -60, top: 700 }}>
           値上がり ＋8.0% ↗
         </Callout>
       </RecScene>
     </Sequence>
-    <Sequence from={360}>
+    <Sequence from={330}>
       <EndSearch />
     </Sequence>
     <Narration lines={LINES_YT} bottom={480} />
