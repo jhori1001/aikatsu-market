@@ -34,9 +34,9 @@ logger = logging.getLogger(__name__)
 
 # 毎日の検索（track_prices）の直後に流すので、その回の検索で見えた出品は対象にならない
 STALE_HOURS = 6
-# 1回に確かめる上限。商品ページは3秒おきに開くので、120件で約6分
-# （初回は溜まっている分があるので、数日かけて片付く）
-BATCH_SIZE = 120
+# 1回に確かめる上限。商品ページは1件約4秒なので、200件で約13分
+# （初回は溜まっている分があるので数日かけて片付く。ふだんは1日数十件）
+BATCH_SIZE = 200
 DRY_RUN_SAMPLE = 20
 
 
@@ -53,6 +53,8 @@ def main() -> None:
         stale_q = select(SaleListing.id).where(
             SaleListing.source == SaleSource.YAHOO_FLEA,
             SaleListing.listing_status == ListingStatus.OPEN,
+            # 画面に出すのは採用した出品だけなので、除外した出品は確かめない（数を絞るため）
+            SaleListing.is_adopted.is_(True),
             or_(SaleListing.last_seen_at.is_(None), SaleListing.last_seen_at < cutoff),
         )
         total = len(db.execute(stale_q).all())
