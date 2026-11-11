@@ -156,3 +156,33 @@ jobs:
               for r in rows:
                   print(f"  {r.official_code:<14} {r.price:>8}円 (中央値 {int(r.med)}) {r.seen} {r.title}")
           PY
+
+      - name: アイドル名の確かめ（出品タイトルに書かれた名前と図鑑の名前を比べる）
+        run: |
+          python - <<'PY'
+          from collections import Counter
+          from sqlalchemy import create_engine, text
+          from app.config import settings
+          KNOWN = """星宮いちご 霧矢あおい 紫吹蘭 有栖川おとめ 藤堂ユリカ 神崎美月 北大路さくら 一ノ瀬かえで 夏樹みくる 音城セイラ 冴草きい 風沢そら
+          姫里マリア 大空あかり 氷上スミレ 新条ひなき 紅林珠璃 黒沢凛 天羽まどか 虹野ゆめ 桜庭ローラ 七倉小春 香澄真昼 白銀リリィ 早乙女あこ 騎咲レイ
+          友希あいね 湊みお 日向エマ 白百合さくや 黒百合かぐや 音城ノエル ハナ 姫石らき 姫乃らき 姫乃みえる 姫宮そら 鈴矢あおい 松本蕾空 漫堂たいせい 和衣パリン""".split()
+          eng = create_engine(settings.database_url)
+          with eng.connect() as cx:
+              names = set(KNOWN) | {r[0] for r in cx.execute(text("select distinct idol_name from cards where idol_name is not null"))}
+              # 姓だけ・名だけの書き方も数える（「いちご」「あおい」など）
+              rows = cx.execute(text("""
+                  select c.official_code, c.idol_name, l.title
+                    from sale_listings l join cards c on c.id = l.card_pk
+              """)).all()
+              by = {}
+              for code, idol, title in rows:
+                  cnt = by.setdefault((code, idol), Counter())
+                  for n in names:
+                      if n and n in title:
+                          cnt[n] += 1
+              print("カード / 図鑑のアイドル名 / 出品タイトルに多い名前（件数）")
+              for (code, idol), cnt in sorted(by.items()):
+                  top = ", ".join(f"{n}{c}" for n, c in cnt.most_common(4))
+                  mark = "" if not cnt or cnt.most_common(1)[0][0] == idol else "  ←違う？"
+                  print(f"  {code:<14} {idol or '-':<10} {top}{mark}")
+          PY
