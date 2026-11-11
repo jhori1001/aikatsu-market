@@ -243,13 +243,21 @@ class DailyPrice(Base):
         BigInteger, ForeignKey("cards.id", ondelete="CASCADE"), nullable=False
     )
     date: Mapped[dt.date] = mapped_column(Date, nullable=False)
+    # all（すべて）/ mint（美品）/ damaged（傷あり）。日輪と同じ（0005）
+    condition_grade: Mapped[str] = mapped_column(String(16), nullable=False, default="all")
     average_asking_price: Mapped[int | None] = mapped_column(Integer)
     asking_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # 売れた価格の統計（日輪と同じ。販売中が3件未満の日の相場に使う）
+    average_price: Mapped[int | None] = mapped_column(Integer)
+    median_price: Mapped[int | None] = mapped_column(Integer)
+    sample_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
-    __table_args__ = (UniqueConstraint("card_pk", "date", name="uq_daily_prices_card_date"),)
+    __table_args__ = (
+        UniqueConstraint("card_pk", "date", "condition_grade", name="uq_daily_prices_card_date_grade"),
+    )
 
 
 # ---------------------------------------------------------------- ショップ価格

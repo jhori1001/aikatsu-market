@@ -350,7 +350,7 @@ def run(*, codes: list[str] | None = None, dry_run: bool = False) -> dict:
                             asking_count=len(prices),
                         )
                         price_stmt = price_stmt.on_conflict_do_update(
-                            constraint="uq_daily_prices_card_date",
+                            constraint="uq_daily_prices_card_date_grade",
                             set_={
                                 "average_asking_price": price_stmt.excluded.average_asking_price,
                                 "asking_count": price_stmt.excluded.asking_count,

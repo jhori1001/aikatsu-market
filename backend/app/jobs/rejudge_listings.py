@@ -134,7 +134,8 @@ def run(*, dry_run: bool) -> dict:
                 last = l.last_seen_at.astimezone(JST).date()
                 by_card[new_pk.get(l.id, l.card_pk)].append((first, last, l.price))
 
-        daily = db.execute(select(DailyPrice)).scalars().all()
+        # 付け直すのは「すべて」の行だけ（美品・傷ありの行は相場の計算が作る、0005）
+        daily = db.execute(select(DailyPrice).where(DailyPrice.condition_grade == "all")).scalars().all()
 
         # パラレル版のカードの日次の行が無い日は、通常版に行がある日のぶんを作る
         have = {(row.card_pk, row.date) for row in daily}
