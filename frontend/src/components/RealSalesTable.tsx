@@ -19,9 +19,9 @@ const PAGE = 10;
 
 const STATUS: [string, string][] = [
   ["all", "すべて"],
-  ["sold", "売切"],
+  ["sold", "売却済み"],
   ["open", "販売中"],
-  ["withdrawn", "掲載終了"],
+  ["withdrawn", "取消"],
 ];
 
 const GRADE: [string, string][] = [
@@ -57,8 +57,8 @@ const CONDITION_LABEL: Record<string, string> = {
 
 const STATUS_LABEL: Record<string, string> = {
   open: "販売中",
-  sold: "売切",
-  withdrawn: "掲載終了",
+  sold: "売却済み",
+  withdrawn: "取消",
   unknown: "不明",
 };
 
