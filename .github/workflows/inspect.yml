@@ -113,6 +113,12 @@ jobs:
               # 相場が無いカードの、保存済みの出品の除外理由と例
               for r in missing:
                   print(f"--- {r.official_code} {r.name}: 保存済みの出品")
+                  hist = cx.execute(text("""
+                      select d.date, d.average_asking_price as avg, d.asking_count as n
+                        from daily_prices d join cards c on c.id = d.card_pk
+                       where c.official_code = :code order by d.date desc limit 10
+                  """), {"code": r.official_code}).all()
+                  print("    直近の日ごと: " + ", ".join(f"{h.date:%m/%d} {h.avg if h.avg is not None else '-'}({h.n}件)" for h in hist))
                   reasons = cx.execute(text("""
                       select coalesce(l.exclusion_reason, '採用') as reason, count(*) as n
                         from sale_listings l join cards c on c.id = l.card_pk
