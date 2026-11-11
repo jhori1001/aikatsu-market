@@ -148,7 +148,7 @@ export default async function CardDetailPage({
             <div className="detail-price">
               <div className={`panel ${shop ? "has-shop" : ""}`}>
                 <div className="price-main">
-                  <div className="stat-label">販売中の平均（Yahoo!フリマ）</div>
+                  <div className="stat-label">販売中の平均</div>
                   <div className="price-hero">{yen(summary.current)}</div>
 
                   <div className="big-tile-diff">

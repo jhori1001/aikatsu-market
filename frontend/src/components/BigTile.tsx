@@ -75,7 +75,7 @@ export function BigTile({
           </div>
 
           <div className="panel big-tile-panel">
-            <div className="stat-label">{useShop ? shop!.shop : "販売中の平均（Yahoo!フリマ）"}</div>
+            <div className="stat-label">{useShop ? shop!.shop : "販売中の平均"}</div>
             <div className={`price-hero ${useShop || summary?.current != null ? "" : "no-data"}`}>
               {useShop ? yen(shop!.price) : summary?.current != null ? yen(summary.current) : "データ無"}
             </div>
