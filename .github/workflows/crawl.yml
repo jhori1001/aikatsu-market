@@ -58,6 +58,6 @@ jobs:
       # 数えるだけ（dry_run）や、反映しない（apply=false）ときは流さない。
       # 失敗しても、ページは前の作り置きのまま出続ける（壊れはしない）。
       - name: サイトのページを作り直す
-        if: ${{ !cancelled() && inputs.dry_run != true && inputs.dry_run != 'true' && inputs.apply != false && inputs.apply != 'false' }}
+        if: ${{ !cancelled() && format('{0}', inputs.dry_run) != 'true' && format('{0}', inputs.apply) != 'false' }}
         continue-on-error: true
         run: python -m app.jobs.revalidate_site
