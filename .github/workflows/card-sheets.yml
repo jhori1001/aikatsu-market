@@ -8,6 +8,10 @@ name: カード画像の一覧表を作る
 on:
   workflow_dispatch:
     inputs:
+      codes:
+        description: "official_code をカンマ区切りで指定（指定したカードだけ、大きい画像で並べる）"
+        required: false
+        default: ""
       side:
         description: "表面(front)か裏面(back)か"
         required: true
@@ -65,6 +69,7 @@ jobs:
           PER_SHEET: ${{ inputs.per_sheet }}
           CODE_SUFFIX: ${{ inputs.code_suffix }}
           CODE_PREFIX: ${{ inputs.code_prefix }}
+          CODES: ${{ inputs.codes }}
         run: |
           python - <<'PY'
           import base64, io, math, os
@@ -77,12 +82,14 @@ jobs:
           per = int(os.environ.get("PER_SHEET") or 9)
           suffixes = [s.strip() for s in (os.environ.get("CODE_SUFFIX") or "").split(",") if s.strip()]
           prefix = (os.environ.get("CODE_PREFIX") or "").strip()
-          cols = 3
-          cell_w = 200
+          codes = [c.strip() for c in (os.environ.get("CODES") or "").split(",") if c.strip()]
+          cols = 2 if codes else 3
+          cell_w = 380 if codes else 200
+          variant = "large" if codes else "thumb"
           label_h = 18
 
           where_sql = "c.is_active is true"
-          params = {"side": side}
+          params = {"side": side, "variant": variant}
           if suffixes:
               # LIKE の "_" は1文字ワイルドカードなので、"_R" が "_PR" にも誤ヒットする。
               # right() での完全一致にする。
@@ -92,6 +99,9 @@ jobs:
                   clauses.append(f"right(c.official_code, char_length(:{key})) = :{key}")
                   params[key] = suf
               where_sql += " and (" + " or ".join(clauses) + ")"
+          if codes:
+              where_sql += " and c.official_code = any(:codes)"
+              params["codes"] = codes
           if prefix:
               where_sql += " and left(c.official_code, char_length(:prefix)) = :prefix"
               params["prefix"] = prefix
@@ -102,7 +112,7 @@ jobs:
                   select c.official_code as code, i.data
                     from cards c
                     join card_images i
-                      on i.card_pk = c.id and i.side = :side and i.variant = 'thumb'
+                      on i.card_pk = c.id and i.side = :side and i.variant = :variant
                    where {where_sql}
                    order by c.series_code, (c.card_number)::int nulls last, c.official_code
               """), params).all()
