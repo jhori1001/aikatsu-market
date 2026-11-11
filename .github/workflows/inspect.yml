@@ -132,3 +132,27 @@ jobs:
                   """), {"code": r.official_code}).all():
                       print(f"    {x.seen} {x.price}円 [{x.exclusion_reason or '採用'}] {x.title}")
           PY
+
+      - name: 飛び抜けた値段の採用出品（中央値の3倍以上・3分の1以下）
+        run: |
+          python - <<'PY'
+          from sqlalchemy import create_engine, text
+          from app.config import settings
+          eng = create_engine(settings.database_url)
+          with eng.connect() as cx:
+              rows = cx.execute(text("""
+                  with m as (
+                    select card_pk, percentile_cont(0.5) within group (order by price) as med
+                      from sale_listings where is_adopted and listing_status = 'open' group by card_pk
+                  ), t as (
+                    select c.official_code, l.price, l.title, l.last_seen_at::date as seen, m.med
+                      from sale_listings l join cards c on c.id = l.card_pk join m on m.card_pk = l.card_pk
+                     where l.is_adopted and l.listing_status = 'open'
+                  )
+                  select * from t where price >= med * 3 or price <= med / 3
+                  order by official_code, price desc
+              """)).all()
+              print(f"{len(rows)}件")
+              for r in rows:
+                  print(f"  {r.official_code:<14} {r.price:>8}円 (中央値 {int(r.med)}) {r.seen} {r.title}")
+          PY
