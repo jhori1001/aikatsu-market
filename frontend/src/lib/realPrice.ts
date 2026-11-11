@@ -37,7 +37,7 @@ export type RealListing = {
   url: string;
   firstSeenAt: string;
   lastSeenAt: string;
-  /** open（販売中）/ sold（売却済み）。いまは販売中の出品だけ記録している */
+  /** open（販売中）/ sold（売却済み）/ withdrawn（掲載終了）。resolve_listings が商品ページで確かめる */
   listingStatus: string;
   /** Yahoo!フリマの状態コード（new / used10 …）。古い記録には無い */
   itemCondition: string | null;

@@ -222,6 +222,10 @@ class SaleListing(Base):
     last_seen_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+    # 検索に出なくなった出品を商品ページで確かめた日時と、売れた日時（0004、カドソバと同じ。
+    # 売れた日時は商品ページの更新日時で近い値を入れる。正確な成約時刻は公開されていない）
+    sold_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
         UniqueConstraint("source", "external_id", name="uq_sale_listings_source_external_id"),

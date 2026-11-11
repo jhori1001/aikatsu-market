@@ -1,9 +1,8 @@
 name: ER・PRカードの相場を記録する
 
 # Yahoo!フリマの販売中の出品を、ER・PRカード(26枚)だけ記録して日次平均を
-# 計算するワークフロー。アイカツ！アンコールは発売間もなく(2026-10-08〜)
-# で件数も少ないため、カドソバのような成約価格の追跡（消えた出品を個別
-# ページで確認する）はしない、ずっと軽い作り（app/jobs/track_prices.py）。
+# 計算するワークフロー（app/jobs/track_prices.py）。2026-11-11 から、検索に
+# 出なくなった出品を商品ページで確かめて売却済み・掲載終了にする（resolve_listings、カドソバと同じ）。
 #
 # robots.txt で禁止されている「売却済みだけに絞り込む検索」は使わない。
 #
@@ -33,7 +32,7 @@ on:
 jobs:
   track:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     defaults:
       run:
@@ -68,6 +67,19 @@ jobs:
             ARGS="$ARGS --code ${{ inputs.code }}"
           fi
           python -m app.jobs.track_prices $ARGS
+
+      # 検索に出なくなった「販売中」の出品を商品ページで確かめ、売却済み・掲載終了にする
+      # （カドソバと同じ。2026-11-11、ユーザー指示「売り切れ・掲載終了が販売中になってる 日輪と同じにして」）。
+      # 1回に最大120件（約6分）。数えるだけのときは先頭20件だけ確かめて保存しない。
+      - name: 売れた・掲載終了した出品を確かめる
+        if: ${{ !cancelled() && !inputs.code }}
+        continue-on-error: true
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="--dry-run"
+          fi
+          python -m app.jobs.resolve_listings $ARGS
 
       # サイトの作り置きのページを作り直させる（カドソバの F2 と同じ、2026-11-05）。
       # 公開ページは毎日の更新のあとに1回だけ作り、あとは作り置きを出す形なので、
