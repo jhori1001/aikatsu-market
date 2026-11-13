@@ -23,4 +23,15 @@ export const LINES_YT: Line[] = [
   { at: 11.15, text: "カドソバ アイカツで、検索！", file: "narr-yt-5.wav" },
 ];
 
+// プレイヤー向け版: ゲームで遊んでいる女性向け（2026-11-13、ユーザー指示「ターゲットは女性・ゲームプレイしてる方、除外は転売ヤー」）。
+// 「売りどき」「儲かる」など売る側の言葉は使わず、集める・ほしい・推しの言葉でそろえる
+export const LINES_GM: Line[] = [
+  { at: 0.15, text: "推しのコーデ、そろえたい！", file: "narr-gm-1.wav" },
+  { at: 2.05, text: "でも、このカードの相場っていくら？", file: "narr-gm-2.wav" },
+  { at: 4.45, text: "カドソバなら、値動きがグラフでわかる！", file: "narr-gm-3.wav", top: true },
+  { at: 6.95, text: "高すぎる値段で、買わなくてすむよ。", file: "narr-gm-4.wav", top: true },
+  { at: 9.5, text: "ほしいカードは、マイリストにハート！", file: "narr-gm-5.wav" },
+  { at: 11.85, text: "カドソバ アイカツで、検索してね！", file: "narr-gm-6.wav" },
+];
+
 export const CREDIT = "VOICEVOX:春日部つむぎ";
