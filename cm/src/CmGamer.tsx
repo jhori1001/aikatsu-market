@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Sequence, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Img, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { BigText, Bgm, CardImg, INK, LAVENDER, Narration, PINK, PINK_DARK, Panel, PinkBg, Sparkles, fontFamily, usePop } from "./common";
 import { EndSearch } from "./end";
 import { LINES_GM } from "./lines";
@@ -58,9 +58,13 @@ const Hook: React.FC = () => {
       </AbsoluteFill>
       <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", top: 20 }}>
         <div style={{ position: "relative", width: 1000, height: 640 }}>
-          <CardImg file="card-left.webp" width={300} style={{ position: "absolute", left: 70, top: 120, transform: `translateY(${(1 - c1) * 900}px) rotate(${-12 * c1}deg)` }} />
-          <CardImg file="card-right.webp" width={300} style={{ position: "absolute", right: 70, top: 120, transform: `translateY(${(1 - c3) * 900}px) rotate(${12 * c3}deg)` }} />
-          <CardImg file="card-main.webp" width={360} style={{ position: "absolute", left: 320, top: 40, transform: `translateY(${(1 - c2) * 900}px) rotate(${-2 * c2}deg)` }} />
+          {/* カードの絵はサイトの録画・写真から1枚ずつきれいに切り出したもの（public/shots/、リポジトリには入れない）。
+              前はバナーから切り抜いていて、端が見切れたり隣のカードが写り込んだりしていた（2026-11-13） */}
+          <div style={{ position: "absolute", left: 60, top: 110, transform: `translateY(${(1 - c1) * 900}px) rotate(${-12 * c1}deg)` }}>
+            <CardFromShot width={300} />
+          </div>
+          <Img src={staticFile("shots/gm-shoes.jpg")} style={{ position: "absolute", right: 60, top: 110, width: 300, borderRadius: 20, boxShadow: "0 30px 60px rgba(58,34,51,0.3)", transform: `translateY(${(1 - c3) * 900}px) rotate(${12 * c3}deg)` }} />
+          <Img src={staticFile("shots/gm-cami.jpg")} style={{ position: "absolute", left: 320, top: 30, width: 360, borderRadius: 24, boxShadow: "0 30px 60px rgba(58,34,51,0.3)", transform: `translateY(${(1 - c2) * 900}px) rotate(${-2 * c2}deg)` }} />
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
